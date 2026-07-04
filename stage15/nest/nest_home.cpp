@@ -5,6 +5,7 @@
 #include "nest_registry.h"
 #include "nest_sd.h"
 #include "nest_ca.h"
+#include "nest_display.h"
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <SD.h>
@@ -25,9 +26,33 @@ void restoreNestAP() {
   WiFi.softAP(cfg.apSsid, cfg.apPsk, ESPNOW_CHANNEL);
   delay(100);
   esp_wifi_set_channel(ESPNOW_CHANNEL, WIFI_SECOND_CHAN_NONE);
-  if (esp_now_init() == ESP_OK) esp_now_register_recv_cb(onDataRecv);
-  delay(50);
-  Serial.println("[HOME] AP + ESP-NOW restored");
+
+  esp_err_t err = ESP_FAIL;
+  constexpr int kMaxAttempts = 5;
+  for (int attempt = 0; attempt < kMaxAttempts; attempt++) {
+    if (attempt > 0) {
+      esp_now_deinit();
+      uint32_t backoffMs = 100U << (attempt - 1);
+      Serial.printf("[HOME] esp_now_init retry in %lu ms (attempt %d/%d)\n",
+                    (unsigned long)backoffMs, attempt + 1, kMaxAttempts);
+      delay(backoffMs);
+    }
+    err = esp_now_init();
+    if (err == ESP_OK) {
+      esp_now_register_recv_cb(onDataRecv);
+      break;
+    }
+    Serial.printf("[HOME] esp_now_init failed: %s (attempt %d/%d)\n",
+                  esp_err_to_name(err), attempt + 1, kMaxAttempts);
+  }
+
+  if (err != ESP_OK) {
+    Serial.println("[HOME] ESP-NOW restore FAILED — workers need reboot");
+    drawBootMsg("ESP-NOW restore FAIL");
+  } else {
+    delay(50);
+    Serial.println("[HOME] AP + ESP-NOW restored");
+  }
 }
 
 static bool hasFilesToUpload() {
