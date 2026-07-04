@@ -160,15 +160,10 @@ void setup() {
     Serial.printf(" ESP-NOW ready on channel %d\n", ESPNOW_CHANNEL);
   }
 
-<<<<<<< HEAD
-  Serial.println("[BOOT] 7/9 HTTP servers");
-  static const char* uploadHdrKeys[] = {"X-Worker", "X-File"};
-  server.collectHeaders(uploadHdrKeys, 2);
-  server.on("/upload", HTTP_POST, handleUpload, handleUploadBody);
-=======
   Serial.println("[BOOT] 7/10 HTTP servers");
-  server.on("/upload", HTTP_POST, handleUpload);
->>>>>>> origin/cursor/fix-issue-43-hygiene-f920
+  static const char* uploadHdrKeys[] = {"X-Worker", "X-File", "X-Upload-Token"};
+  server.collectHeaders(uploadHdrKeys, 3);
+  server.on("/upload", HTTP_POST, handleUpload, handleUploadBody);
   server.begin();
   rawServer.begin();
   Serial.println(" HTTP server started (port 80)");

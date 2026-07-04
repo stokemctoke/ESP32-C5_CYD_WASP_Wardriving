@@ -106,13 +106,9 @@ void loadWorkerConfig() {
       // Nest connection
       else if (key == "nestSsid")      val.toCharArray(nestSsid, sizeof(nestSsid));
       else if (key == "nestPsk")       val.toCharArray(nestPsk,  sizeof(nestPsk));
-<<<<<<< HEAD
       else if (key == "nestIp")        val.toCharArray(nestIp,        sizeof(nestIp));
       else if (key == "uploadToken")   val.toCharArray(uploadToken,   sizeof(uploadToken));
-=======
-      else if (key == "nestIp")        val.toCharArray(nestIp,   sizeof(nestIp));
       else if (key == "nestMac")       parseNestMac(val, nestMac);
->>>>>>> origin/cursor/fix-issue-12-nest-mac-f920
       // Sync & timing
       else if (key == "syncEvery")           syncEvery           = max(1, (int)val.toInt());
       else if (key == "heartbeatIntervalMs") heartbeatIntervalMs = max(1000, (int)val.toInt());
