@@ -623,7 +623,7 @@ void handleTapSettings(int px, int py) {
     tft.setTextFont(2);
     tft.setTextColor(CLR_BG, CLR_STALE);
     tft.drawString("Uploading...", 120, 195);
-    runHomeUploads();
+    requestHomeUpload();
     refreshDisplay();
   }
 }

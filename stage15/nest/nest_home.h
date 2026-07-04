@@ -9,3 +9,5 @@ extern uint8_t  homeStatus;
 
 void restoreNestAP();
 void runHomeUploads();
+void requestHomeUpload();
+void startHomeUploadTask();
