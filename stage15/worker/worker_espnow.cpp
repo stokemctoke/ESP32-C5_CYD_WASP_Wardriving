@@ -58,9 +58,12 @@ void sendSummary(int wifiTotal, int wifi2g, int wifi5g,
   pkt.wifi5g     = (uint8_t)wifi5g;
   pkt.bleCount   = (uint16_t)bleCount;
   pkt.bestRssi   = bestRssi;
-  pkt.cycleCount = cycleCount;
+  pkt.cycleCount = cycleCount + 1;
   uint8_t mac[6];
   WiFi.macAddress(mac);
   memcpy(pkt.workerMac, mac, 6);
-  esp_now_send(NEST_MAC, (uint8_t*)&pkt, sizeof(pkt));
+  esp_err_t err = esp_now_send(NEST_MAC, (uint8_t*)&pkt, sizeof(pkt));
+  if (err != ESP_OK) {
+    Serial.printf("[WARN] esp_now_send summary failed: %s\n", esp_err_to_name(err));
+  }
 }
