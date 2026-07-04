@@ -55,7 +55,14 @@ WiFiScanResult runWiFiScan() {
   extern bool sdOk;
   Serial.println("\n[WORKER] Starting WiFi scan (2.4 GHz + 5 GHz)...");
   WiFi.setBandMode(WIFI_BAND_MODE_AUTO);
-  int n = WiFi.scanNetworks(false, true, false, wifiChanMs);
+  int n = WiFi.scanNetworks(true, true, false, wifiChanMs);
+  while (n == WIFI_SCAN_RUNNING) {
+    if (gpsOk) while (gpsSerial.available()) gps.encode(gpsSerial.read());
+    extern void maybeHeartbeat();
+    maybeHeartbeat();
+    delay(10);
+    n = WiFi.scanComplete();
+  }
 
   WiFiScanResult r = {0, 0, 0, -127};
   if (n == WIFI_SCAN_FAILED || n < 0) { Serial.println("[WORKER] WiFi scan failed"); return r; }
