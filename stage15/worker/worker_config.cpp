@@ -8,6 +8,7 @@ char nestSsid[33]    = "WASP-Nest";
 char nestPsk[65]     = "waspswarm";
 char nestIp[16]      = "192.168.4.1";
 char uploadToken[64] = WASP_DEFAULT_UPLOAD_TOKEN;
+uint8_t nestMac[6];
 
 // ── Sync behaviour ───────────────────────────────────────────────────────────
 int syncEvery          = 25;    // sync to Nest every N scan cycles
@@ -44,7 +45,25 @@ bool parseLedEvent(const String& val, LedEvent& ev) {
   return true;
 }
 
+bool parseNestMac(const String& val, uint8_t mac[6]) {
+  String s = val;
+  s.trim();
+  s.toUpperCase();
+  if (s.length() != 17) return false;
+  for (int i = 0; i < 6; i++) {
+    int off = i * 3;
+    if (i < 5 && s.charAt(off + 2) != ':') return false;
+    char hex[3] = { (char)s.charAt(off), (char)s.charAt(off + 1), '\0' };
+    char* end = nullptr;
+    unsigned long byte = strtoul(hex, &end, 16);
+    if (end == hex || byte > 0xFF) return false;
+    mac[i] = (uint8_t)byte;
+  }
+  return true;
+}
+
 void loadWorkerConfig() {
+  memcpy(nestMac, NEST_MAC_DEFAULT, 6);
   if (!SD.exists("/reset.cfg")) {
     File cfg = SD.open("/worker.cfg");
     if (!cfg) return;
@@ -87,8 +106,13 @@ void loadWorkerConfig() {
       // Nest connection
       else if (key == "nestSsid")      val.toCharArray(nestSsid, sizeof(nestSsid));
       else if (key == "nestPsk")       val.toCharArray(nestPsk,  sizeof(nestPsk));
+<<<<<<< HEAD
       else if (key == "nestIp")        val.toCharArray(nestIp,        sizeof(nestIp));
       else if (key == "uploadToken")   val.toCharArray(uploadToken,   sizeof(uploadToken));
+=======
+      else if (key == "nestIp")        val.toCharArray(nestIp,   sizeof(nestIp));
+      else if (key == "nestMac")       parseNestMac(val, nestMac);
+>>>>>>> origin/cursor/fix-issue-12-nest-mac-f920
       // Sync & timing
       else if (key == "syncEvery")           syncEvery           = max(1, (int)val.toInt());
       else if (key == "heartbeatIntervalMs") heartbeatIntervalMs = max(1000, (int)val.toInt());

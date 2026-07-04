@@ -17,7 +17,7 @@ void initEspNow() {
   if (esp_now_init() != ESP_OK) { Serial.println("[WORKER] ESP-NOW init FAILED"); return; }
   esp_now_register_send_cb(onSendResult);
   esp_now_peer_info_t peer = {};
-  memcpy(peer.peer_addr, NEST_MAC, 6);
+  memcpy(peer.peer_addr, nestMac, 6);
   peer.channel = ESPNOW_CHANNEL;
   peer.encrypt = false;
   esp_now_add_peer(&peer);
@@ -29,7 +29,7 @@ void sendHeartbeat() {
   pkt.nodeType    = 0;
   pkt.firmwareVer = WASP_FIRMWARE_VER;
   WiFi.macAddress(pkt.workerMac);
-  esp_now_send(NEST_MAC, (uint8_t*)&pkt, sizeof(pkt));
+  esp_now_send(nestMac, (uint8_t*)&pkt, sizeof(pkt));
   lastHeartbeatMs = millis();
   ledHeartbeat();
 }
@@ -62,5 +62,5 @@ void sendSummary(int wifiTotal, int wifi2g, int wifi5g,
   uint8_t mac[6];
   WiFi.macAddress(mac);
   memcpy(pkt.workerMac, mac, 6);
-  esp_now_send(NEST_MAC, (uint8_t*)&pkt, sizeof(pkt));
+  esp_now_send(nestMac, (uint8_t*)&pkt, sizeof(pkt));
 }

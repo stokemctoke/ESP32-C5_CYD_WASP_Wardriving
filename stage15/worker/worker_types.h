@@ -27,8 +27,8 @@
 #define MAX_WIFI_PER_SLOT     40
 #define MAX_BLE_PER_SLOT      20
 
-// ── Nest MAC (used by ESP-NOW) ────────────────────────────────────────────────
-static const uint8_t NEST_MAC[6] = {0xA4, 0xF0, 0x0F, 0x5D, 0x96, 0xD4};
+// ── Nest MAC compile-time default (overridable via nestMac in worker.cfg) ─────
+static const uint8_t NEST_MAC_DEFAULT[6] = {0xA4, 0xF0, 0x0F, 0x5D, 0x96, 0xD4};
 
 // ── LED type enum ─────────────────────────────────────────────────────────────
 enum LedType { LED_WS2812, LED_RGB4PIN };
