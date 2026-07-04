@@ -304,6 +304,49 @@ Each worker can carry its own `worker.cfg` so units can be tuned independently w
 
 ---
 
+## Nest Touch UI
+
+The CYD Nest runs a stack-based touch UI on the 240×320 ILI9341 display (CST820 capacitive touch). Screens fade on transition; sub-screens show a **`<`** back button in the top-left header.
+
+### Screen map
+
+```
+HOME ──tap worker row──► WORKER DETAIL ──VIEW FILES──► FILE LIST
+  │                            ▲                            │
+  ├── F (header) ──────────────┼── FILE BROWSER ────────────┘
+  │                            │         (tap worker row)
+  └── S (header) ──► SETTINGS
+```
+
+| Screen | How to reach | What it shows |
+|---|---|---|
+| **Home** | Boot / back from any sub-screen | Live worker list (MAC, RSSI, GPS, scan counts), status bar, rotating footer (sync / WiGLE / WDGWars) |
+| **Worker detail** | Tap a worker row on Home | Type (Worker/Drone), status, RSSI, GPS, scan stats, SD file count, **VIEW FILES** button |
+| **File browser** | Tap **F** in the Home header | All workers with logs on SD — MAC, file count, total size |
+| **File list** | **VIEW FILES** on worker detail, or tap a row in file browser | Per-worker CSV files; tap **x** on the right to delete (confirm YES/NO) |
+| **Settings** | Tap **S** in the Home header | Home WiFi status, auto-upload interval, last WiGLE/WDGWars result, **UPLOAD NOW** button |
+
+### Gestures
+
+| Action | Result |
+|---|---|
+| Tap worker row (Home) | Open that worker's detail screen |
+| Tap **F** (Home header, top-right) | Open file browser |
+| Tap **S** (Home header, top-right) | Open settings / upload screen |
+| Tap **`<`** (top-left on sub-screens) | Go back one screen |
+| Tap **VIEW FILES** (worker detail) | Open that worker's file list |
+| Tap worker row (file browser) | Open that worker's file list |
+| Tap **x** (file list, right edge) | Confirm delete file from SD |
+| Tap **UPLOAD NOW** (settings) | Trigger immediate WiGLE + WDGWars upload |
+
+Home auto-refreshes worker stats once per second. Detail screens repaint only on navigation to avoid flicker.
+
+Worker rows use a coloured dot and letter: green **W** = Worker (SD + GPS), cyan **D** = Drone (RAM buffer). Rows fade to stale amber after 10 s without a heartbeat and disappear from the list after 90 s.
+
+To change home WiFi credentials, API keys, or LED patterns, edit `/wasp.cfg` on the Nest SD card and reboot — the settings screen is read-only except for **UPLOAD NOW**.
+
+---
+
 ## Repository Layout
 
 ```
