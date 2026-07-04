@@ -76,7 +76,7 @@ void logWiFiRow(const String& mac, const String& ssid, wifi_auth_mode_t auth,
                 int channel, int rssi,
                 double lat, double lon, double altM, double accuracy) {
   String ts = gpsTimestamp();
-  if (ts.isEmpty()) ts = "1970-01-01 00:00:00";
+  if (ts.isEmpty()) ts = nowTimestamp();
   String safe = ssid; safe.replace("\"", "\"\"");
   char line[256];
   snprintf(line, sizeof(line), "%s,\"%s\",%s,%s,%d,%d,%d,%.6f,%.6f,%.0f,%.1f,WIFI,,",
@@ -90,7 +90,7 @@ void logBLERow(const String& mac, const String& name, int rssi,
                double lat, double lon, double altM, double accuracy,
                bool hasMfgr, uint16_t mfgrId) {
   String ts = gpsTimestamp();
-  if (ts.isEmpty()) ts = "1970-01-01 00:00:00";
+  if (ts.isEmpty()) ts = nowTimestamp();
   String safe = name; safe.replace("\"", "\"\"");
   char mfgrField[8] = "";
   if (hasMfgr) snprintf(mfgrField, sizeof(mfgrField), "%u", mfgrId);
