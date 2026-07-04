@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install arduino-cli
+        uses: arduino/setup-arduino-cli@v1
+
+      - name: Install ESP32 core
+        run: |
+          arduino-cli config add board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32
+
+      - name: Install libraries
+        run: |
+          arduino-cli lib install "NimBLE-Arduino" "TinyGPSPlus" "Adafruit NeoPixel" "TFT_eSPI"
+
+      - name: Configure TFT_eSPI for Nest display
+        run: cp ci/tft_eSPI_User_Setup.h ~/Arduino/libraries/TFT_eSPI/User_Setup.h
+
+      - name: Compile Nest (ESP32 Dev Module)
+        run: arduino-cli compile --fqbn esp32:esp32:esp32 stage15/nest/nest.ino
+
+      - name: Compile Worker (ESP32-C5, Huge APP)
+        run: >-
+          arduino-cli compile
+          --fqbn esp32:esp32:esp32c5:PartitionScheme=huge_app,CDCOnBoot=cdc,PSRAM=disabled
+          stage15/worker/worker.ino
