@@ -65,10 +65,15 @@ Integration branch: `cursor/pre-release-integration-f920`
 | #68 | GPS logging |
 | #84 | Hygiene |
 
-## Conflict hotspots
-- `nest_upload.cpp` — #58, #49, #62, #76, #50
-- `nest_display.cpp` — #50, #46, #54, #71, #83, #73
-- `nest_home.cpp` — #50, #47, #72, #81, #69, #73
-- `nest.ino` — #50, #70, #82, #43, #73, #21
-- `worker_sync.cpp` — #58, #49, #45, #64, #65
-- `README.md` — #57, #74, #77, #42, #12
+## Conflict hotspots (resolved in integration)
+
+| Files | PRs merged | Resolution |
+|-------|------------|------------|
+| `nest_upload.cpp` | #6+#7+#23+#28+#5 | Auth + streaming + chunk seq + port80 + SD mutex combined |
+| `nest_home.cpp` | #5+#18+#25+#30+#32+#27 | SD mutex + TLS GTS + restoreNestAP retry + home task |
+| `nest_espnow.cpp` | #22+#26 | Swarm filter + deferred logging |
+| `worker_config.*` | #6+#12 | uploadToken + nestMac |
+| `nest.ino` | #43+#7+#6 | Boot 10/10 + streaming upload headers |
+| `worker_espnow.cpp` | #8+#11+#12+#43 | nodeType + espNowOk + nestMac + send error check |
+
+Integration branch: `cursor/pre-release-integration-f920` — all 39 issues merged.
