@@ -83,7 +83,7 @@ WiFiScanResult runWiFiScan() {
                   ssid.isEmpty() ? "[hidden]" : ssid.c_str());
 
     if (!droneMode) {
-      if (hasFix && sdOk && logFile)
+      if (sdOk && logFile)
         logWiFiRow(WiFi.BSSIDstr(i), ssid, WiFi.encryptionType(i),
                    ch, rssi, lat, lon, alt, accuracy);
     } else {
@@ -100,7 +100,7 @@ WiFiScanResult runWiFiScan() {
 
   r.total = n;
   Serial.printf("[WORKER] WiFi: %d network(s) — %d x 2.4GHz, %d x 5GHz\n", n, r.g2, r.g5);
-  if (!droneMode && !hasFix) Serial.println("         (no GPS fix — not logged to SD)");
+  if (!droneMode && !hasFix) Serial.println("         (no GPS fix — logged with fallback timestamp, 0,0 coords)");
   WiFi.scanDelete();
   return r;
 }
@@ -129,13 +129,16 @@ int runBLEScan() {
   }
 
   if (!droneMode) {
-    if (gpsOk && gps.location.isValid() && sdOk && logFile) {
-      double lat      = gps.location.lat();
-      double lon      = gps.location.lng();
-      double alt      = gps.altitude.isValid() ? gps.altitude.meters() : 0.0;
-      double accuracy = gps.hdop.isValid()     ? gps.hdop.hdop() * 5.0  : 999.9;
+    if (sdOk && logFile) {
+      bool   hasFix   = gpsOk && gps.location.isValid();
+      double lat      = hasFix ? gps.location.lat()                           : 0.0;
+      double lon      = hasFix ? gps.location.lng()                           : 0.0;
+      double alt      = (hasFix && gps.altitude.isValid()) ? gps.altitude.meters() : 0.0;
+      double accuracy = (hasFix && gps.hdop.isValid())     ? gps.hdop.hdop() * 5.0  : 999.9;
       for (int i = 0; i < (int)bleAddrs.size(); i++)
         logBLERow(bleAddrs[i], bleNames[i], bleRssis[i], lat, lon, alt, accuracy, bleMfgrFlags[i], bleMfgrIds[i]);
+      if (!hasFix && bleAddrs.size() > 0)
+        Serial.println("         (no GPS fix — logged with fallback timestamp, 0,0 coords)");
     }
   } else {
     for (int i = 0; i < (int)bleAddrs.size(); i++) {
