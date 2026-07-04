@@ -11,6 +11,8 @@
 #include <SD.h>
 #include <esp_wifi.h>
 #include <Arduino.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
 char     lastWigleStr[32]    = "never";
 char     lastWdgStr[32]      = "never";
@@ -19,6 +21,26 @@ uint8_t  homeStatus          = 0;
 
 extern bool sdOk;
 static bool uploadRunning = false;
+static volatile bool homeUploadRequested = false;
+
+void requestHomeUpload() {
+  homeUploadRequested = true;
+}
+
+static void homeUploadTask(void*) {
+  for (;;) {
+    if (homeUploadRequested) {
+      homeUploadRequested = false;
+      runHomeUploads();
+    }
+    vTaskDelay(1);
+  }
+}
+
+void startHomeUploadTask() {
+  // Stack matches uploadTask — TLS handshakes in streamMultipartPost need headroom.
+  xTaskCreatePinnedToCore(homeUploadTask, "homeUp", 12288, NULL, 5, NULL, 0);
+}
 
 void restoreNestAP() {
   WiFi.mode(WIFI_AP_STA);

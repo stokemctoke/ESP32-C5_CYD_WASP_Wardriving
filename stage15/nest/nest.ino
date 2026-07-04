@@ -171,6 +171,7 @@ void setup() {
 
   Serial.println("[BOOT] 8/9 uploadTask spawn");
   xTaskCreatePinnedToCore(uploadTask, "upload", 12288, NULL, 5, NULL, 0);
+  startHomeUploadTask();
 
   Serial.println("[BOOT] 9/9 touch init");
   touchBegin();
@@ -194,7 +195,7 @@ void loop() {
 
   if (now - lastUploadAttemptMs >= HOME_UPLOAD_INTERVAL_MS) {
     lastUploadAttemptMs = now;
-    runHomeUploads();
+    requestHomeUpload();
   }
 
   if (now - lastRefresh >= 1000) { refreshDisplay(); lastRefresh = now; }
