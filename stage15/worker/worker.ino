@@ -124,7 +124,8 @@ void setup() {
   Serial.printf(" MAC: %s\n", WiFi.macAddress().c_str());
 
   initEspNow();
-  Serial.println(" ESP-NOW OK");
+  if (espNowOk) Serial.println(" ESP-NOW OK");
+  else          Serial.println(" ESP-NOW FAILED — nest heartbeats disabled");
 
   NimBLEDevice::init("");
   pBLEScan = NimBLEDevice::getScan();
