@@ -105,8 +105,8 @@ bool uploadFileChunked(const String& path, const String& name, int fileSize) {
     if (tcp.connect(nestIp, NEST_UPLOAD_PORT)) {
       tcp.setNoDelay(true);
       tcp.setTimeout(5000);
-      tcp.printf("UPLOAD_CHUNK %s %s %d %d %d\n",
-                 myMac.c_str(), name.c_str(), ci, totalChunks, chunkSize);
+      tcp.printf("UPLOAD_CHUNK %s %s %s %d %d %d\n",
+                 uploadToken, myMac.c_str(), name.c_str(), ci, totalChunks, chunkSize);
       tcp.flush();
       String ready = tcp.readStringUntil('\n'); ready.trim();
       if (ready == "READY") {
@@ -282,7 +282,7 @@ void syncFiles() {
         tcp.setNoDelay(true);
         tcp.setTimeout(5000);
         Serial.print("OK hdr..");
-        tcp.printf("UPLOAD %s %s %d\n", myMac.c_str(), name.c_str(), sz);
+        tcp.printf("UPLOAD %s %s %s %d\n", uploadToken, myMac.c_str(), name.c_str(), sz);
         tcp.flush();
         Serial.print("rdy..");
         String ready = tcp.readStringUntil('\n'); ready.trim();
@@ -388,6 +388,7 @@ void syncBuffer() {
     HTTPClient http;
     http.begin("http://" + String(nestIp) + "/upload?worker=" + myMac + "&file=" + fileName);
     http.addHeader("Content-Type", "text/csv");
+    http.addHeader("X-Upload-Token", uploadToken);
     int code = http.POST(csv);
     http.end();
 

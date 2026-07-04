@@ -1,11 +1,13 @@
 #include "worker_config.h"
 #include "worker_led.h"
+#include "../nest/nest_types.h"
 #include <SD.h>
 
 // ── Nest connection ───────────────────────────────────────────────────────────
-char nestSsid[33] = "WASP-Nest";
-char nestPsk[65]  = "waspswarm";
-char nestIp[16]   = "192.168.4.1";
+char nestSsid[33]    = "WASP-Nest";
+char nestPsk[65]     = "waspswarm";
+char nestIp[16]      = "192.168.4.1";
+char uploadToken[64] = WASP_DEFAULT_UPLOAD_TOKEN;
 
 // ── Sync behaviour ───────────────────────────────────────────────────────────
 int syncEvery          = 25;    // sync to Nest every N scan cycles
@@ -85,7 +87,8 @@ void loadWorkerConfig() {
       // Nest connection
       else if (key == "nestSsid")      val.toCharArray(nestSsid, sizeof(nestSsid));
       else if (key == "nestPsk")       val.toCharArray(nestPsk,  sizeof(nestPsk));
-      else if (key == "nestIp")        val.toCharArray(nestIp,   sizeof(nestIp));
+      else if (key == "nestIp")        val.toCharArray(nestIp,        sizeof(nestIp));
+      else if (key == "uploadToken")   val.toCharArray(uploadToken,   sizeof(uploadToken));
       // Sync & timing
       else if (key == "syncEvery")           syncEvery           = max(1, (int)val.toInt());
       else if (key == "heartbeatIntervalMs") heartbeatIntervalMs = max(1000, (int)val.toInt());

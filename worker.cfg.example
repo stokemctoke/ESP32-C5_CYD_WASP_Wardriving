@@ -27,10 +27,11 @@ ledType=ws2812           # ws2812  → addressable WS2812B/SK6812 on D0 (GPIO3) 
 #gpsTxPin=11             # ESP32 TX pin (sends to GPS RX)  (XIAO C5: D6)
 
 # ── Nest connection ───────────────────────────────────────────────────────────
-# Must match wasp.cfg apSsid / apPsk on the Nest.
+# Must match wasp.cfg apSsid / apPsk / uploadToken on the Nest.
 #nestSsid=WASP-Nest
 #nestPsk=waspswarm
 #nestIp=192.168.4.1
+#uploadToken=waspswarm
 
 # ── Scan timing ───────────────────────────────────────────────────────────────
 #syncEvery=25            # sync files to Nest every N scan cycles

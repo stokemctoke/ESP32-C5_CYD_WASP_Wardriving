@@ -17,6 +17,7 @@
 #define NEST_LED_B  17
 
 // ── Network ───────────────────────────────────────────────────────────────────
+#define WASP_DEFAULT_UPLOAD_TOKEN "waspswarm"
 #define ESPNOW_CHANNEL          1
 #define HOME_UPLOAD_INTERVAL_MS 300000
 #define HOME_CONNECT_TIMEOUT_MS  15000
@@ -109,6 +110,7 @@ struct wasp_config_t {
   char homePsk[64];
   char apSsid[32];
   char apPsk[32];
+  char uploadToken[64];
   char wigleBasicToken[128];
   char wdgwarsApiKey[72];
   uint16_t swarmId;        // 0 = accept all ESP-NOW senders
