@@ -17,3 +17,4 @@ void nestLedOff();
 void nestLedSet(bool r, bool g, bool b);
 void nestLedFlash(bool r, bool g, bool b, int times, int onMs, int offMs);
 void nestLedFlashEvent(const LedEvent& ev);
+void nestLedTick();
