@@ -25,6 +25,20 @@ static struct {
   String   workerMac;
 } gHttpUp;
 
+static struct {
+  bool   active;
+  String path;
+  int    expectedChunk;
+  int    totalChunks;
+} sChunkSeq = { false, "", 0, 0 };
+
+static void clearChunkSeq() {
+  sChunkSeq.active        = false;
+  sChunkSeq.path          = "";
+  sChunkSeq.expectedChunk = 0;
+  sChunkSeq.totalChunks   = 0;
+}
+
 static bool resolveUploadMeta(String& workerMac, String& fileName) {
   workerMac = server.header("X-Worker");
   fileName  = server.header("X-File");
@@ -133,6 +147,36 @@ void handleRawUpload() {
 
   String dir  = "/logs/" + workerMac;
   String path = dir + "/" + fileName;
+
+  if (isChunked) {
+    if (totalChunks <= 0 || chunkIndex < 0 || chunkIndex >= totalChunks) {
+      Serial.printf("[NEST] Rejected chunk: invalid index %d/%d\n",
+                    chunkIndex + 1, totalChunks);
+      client.println("ERR bad chunk");
+      client.stop();
+      return;
+    }
+    if (!sChunkSeq.active) {
+      if (chunkIndex != 0) {
+        Serial.printf("[NEST] Rejected chunk %d: no upload in progress\n", chunkIndex);
+        client.println("ERR chunk out of order");
+        client.stop();
+        return;
+      }
+      sChunkSeq.active        = true;
+      sChunkSeq.path          = path;
+      sChunkSeq.expectedChunk = 0;
+      sChunkSeq.totalChunks   = totalChunks;
+    } else if (sChunkSeq.path != path || sChunkSeq.totalChunks != totalChunks ||
+               chunkIndex != sChunkSeq.expectedChunk) {
+      Serial.printf("[NEST] Rejected chunk %d for %s (expected %d)\n",
+                    chunkIndex, fileName.c_str(), sChunkSeq.expectedChunk);
+      client.println("ERR chunk out of order");
+      client.stop();
+      return;
+    }
+  }
+
   if (!SD.exists("/logs")) SD.mkdir("/logs");
   if (!SD.exists(dir))     SD.mkdir(dir);
 
@@ -144,7 +188,12 @@ void handleRawUpload() {
     f = SD.open(path.c_str(), FILE_APPEND);
     if (!f) f = SD.open(path.c_str(), FILE_WRITE);
   }
-  if (!f) { client.println("ERR sd open failed"); client.stop(); return; }
+  if (!f) {
+    if (isChunked) clearChunkSeq();
+    client.println("ERR sd open failed");
+    client.stop();
+    return;
+  }
 
   client.println("READY");
 
@@ -172,6 +221,7 @@ void handleRawUpload() {
 
   if (sdFail) {
     SD.remove(path.c_str());
+    if (isChunked) clearChunkSeq();
     client.println("ERR sd write failed");
     client.stop();
     return;
@@ -180,10 +230,16 @@ void handleRawUpload() {
   Serial.printf("[NEST] recv %u/%d B for %s\n", (unsigned)written, fileSize, fileName.c_str());
 
   if ((int)written < fileSize) {
+    if (isChunked) clearChunkSeq();
     client.println("ERR transfer incomplete");
     client.stop();
     SD.remove(path.c_str());
     return;
+  }
+
+  if (isChunked) {
+    sChunkSeq.expectedChunk++;
+    if (chunkIndex == totalChunks - 1) clearChunkSeq();
   }
 
   client.println("OK");
