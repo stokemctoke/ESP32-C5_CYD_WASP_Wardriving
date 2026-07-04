@@ -36,9 +36,9 @@ bool parseLedEvent(const String& val, LedEvent& ev) {
   int c3 = val.indexOf(',', c2 + 1);
   if (c1 < 0 || c2 < 0 || c3 < 0) return false;
   ev.colour  = (uint32_t)strtoul(val.substring(0, c1).c_str(), nullptr, 16);
-  ev.flashes = val.substring(c1 + 1, c2).toInt();
-  ev.onMs    = val.substring(c2 + 1, c3).toInt();
-  ev.offMs   = val.substring(c3 + 1).toInt();
+  ev.flashes = constrain(val.substring(c1 + 1, c2).toInt(), 0, 100);
+  ev.onMs    = constrain(val.substring(c2 + 1, c3).toInt(), 0, 10000);
+  ev.offMs   = constrain(val.substring(c3 + 1).toInt(), 0, 10000);
   return true;
 }
 
