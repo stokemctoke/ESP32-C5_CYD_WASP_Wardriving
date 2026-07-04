@@ -388,6 +388,8 @@ void syncBuffer() {
     HTTPClient http;
     http.begin("http://" + String(nestIp) + "/upload?worker=" + myMac + "&file=" + fileName);
     http.addHeader("Content-Type", "text/csv");
+    http.addHeader("X-Worker", myMac);
+    http.addHeader("X-File", fileName);
     int code = http.POST(csv);
     http.end();
 

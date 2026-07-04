@@ -12,4 +12,5 @@ extern char        lastSyncStr[48];
 bool isValidMac(const String& mac);
 bool isValidFilename(const String& name);
 void handleRawUpload();
+void handleUploadBody();
 void handleUpload();
