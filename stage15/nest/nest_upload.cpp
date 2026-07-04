@@ -2,6 +2,7 @@
 #include "nest_config.h"
 #include "nest_registry.h"
 #include "nest_led.h"
+#include "nest_sd.h"
 #include <SD.h>
 #include <WiFi.h>
 #include <Arduino.h>
@@ -177,6 +178,7 @@ void handleRawUpload() {
     }
   }
 
+  sdTake();
   if (!SD.exists("/logs")) SD.mkdir("/logs");
   if (!SD.exists(dir))     SD.mkdir(dir);
 
@@ -190,6 +192,7 @@ void handleRawUpload() {
   }
   if (!f) {
     if (isChunked) clearChunkSeq();
+    sdGive();
     client.println("ERR sd open failed");
     client.stop();
     return;
@@ -223,6 +226,7 @@ void handleRawUpload() {
   if (sdFail) {
     SD.remove(path.c_str());
     if (isChunked) clearChunkSeq();
+    sdGive();
     client.println("ERR sd write failed");
     client.stop();
     return;
@@ -231,12 +235,14 @@ void handleRawUpload() {
   Serial.printf("[NEST] recv %u/%d B for %s\n", (unsigned)written, fileSize, fileName.c_str());
 
   if ((int)written < fileSize) {
+    SD.remove(path.c_str());
     if (isChunked) clearChunkSeq();
+    sdGive();
     client.println("ERR transfer incomplete");
     client.stop();
-    SD.remove(path.c_str());
     return;
   }
+  sdGive();
 
   if (isChunked) {
     sChunkSeq.expectedChunk++;
@@ -289,11 +295,13 @@ void handleUploadBody() {
     gHttpUp.workerMac = workerMac;
     String dir = "/logs/" + workerMac;
     gHttpUp.path = dir + "/" + fileName;
+    sdTake();
     if (!SD.exists("/logs")) SD.mkdir("/logs");
     if (!SD.exists(dir))     SD.mkdir(dir);
     if (SD.exists(gHttpUp.path.c_str())) SD.remove(gHttpUp.path.c_str());
     gHttpUp.sdFile = SD.open(gHttpUp.path.c_str(), FILE_WRITE);
     if (!gHttpUp.sdFile) {
+      sdGive();
       gHttpUp.ok = false; gHttpUp.httpCode = 500; gHttpUp.errText = "SD open failed";
     }
     break;
@@ -320,12 +328,14 @@ void handleUploadBody() {
       taskEXIT_CRITICAL(&gLock);
       Serial.printf("[NEST] Saved %s (%d bytes)\n", gHttpUp.path.c_str(), gHttpUp.contentLen);
     }
+    sdGive();
     break;
   }
   case RAW_ABORTED: {
     gHttpUp.ok = false; gHttpUp.httpCode = 500; gHttpUp.errText = "Upload aborted";
     if (gHttpUp.sdFile) gHttpUp.sdFile.close();
     if (gHttpUp.path.length()) SD.remove(gHttpUp.path.c_str());
+    sdGive();
     break;
   }
   default:

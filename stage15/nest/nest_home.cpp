@@ -3,6 +3,7 @@
 #include "nest_led.h"
 #include "nest_espnow.h"
 #include "nest_registry.h"
+#include "nest_sd.h"
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <SD.h>
@@ -29,8 +30,9 @@ void restoreNestAP() {
 }
 
 static bool hasFilesToUpload() {
+  sdTake();
   File root = SD.open("/logs");
-  if (!root) return false;
+  if (!root) { sdGive(); return false; }
   bool found = false;
   while (!found) {
     File entry = root.openNextFile();
@@ -51,6 +53,7 @@ static bool hasFilesToUpload() {
     dir.close();
   }
   root.close();
+  sdGive();
   return found;
 }
 
@@ -77,11 +80,22 @@ static bool writeAll(WiFiClientSecure& wc, const uint8_t* data, size_t len, size
 static int streamMultipartPost(const char* host, const char* urlPath,
                                 const char* authHeader, const char* authValue,
                                 const String& filePath, const String& fileName) {
+  sdTake();
   File f = SD.open(filePath.c_str());
-  if (!f) { Serial.println("[UPLOAD] SD open failed"); return -1; }
+  if (!f) {
+    sdGive();
+    Serial.println("[UPLOAD] SD open failed");
+    return -1;
+  }
   int sz = (int)f.size();
-  if (sz <= 0) { f.close(); Serial.println("[UPLOAD] empty file"); return -1; }
+  if (sz <= 0) {
+    f.close();
+    sdGive();
+    Serial.println("[UPLOAD] empty file");
+    return -1;
+  }
   f.close();
+  sdGive();
 
   const char* boundary = "WASPupload0123456789";
   String pre  = String("--") + boundary + "\r\n"
@@ -122,8 +136,14 @@ static int streamMultipartPost(const char* host, const char* urlPath,
     Serial.println("[UPLOAD] pre-boundary write failed"); wc.stop(); return -1;
   }
 
+  sdTake();
   File sf = SD.open(filePath.c_str());
-  if (!sf) { wc.stop(); Serial.println("[UPLOAD] re-open failed"); return -1; }
+  if (!sf) {
+    sdGive();
+    wc.stop();
+    Serial.println("[UPLOAD] re-open failed");
+    return -1;
+  }
   uint8_t buf[512];
   size_t  n;
   uint32_t bodyStart = millis();
@@ -132,6 +152,7 @@ static int streamMultipartPost(const char* host, const char* urlPath,
     if (!writeAll(wc, buf, n, bodyBytes)) { bodyOk = false; break; }
   }
   sf.close();
+  sdGive();
   if (!bodyOk) {
     Serial.printf("[UPLOAD] body write stalled after %u/%d B in %lu ms\n",
                   (unsigned)bodyBytes, total, (unsigned long)(millis() - bodyStart));
@@ -208,16 +229,17 @@ static bool uploadFileToWdgwars(const String& path, const String& fileName) {
 }
 
 static int buildMergedCsv(const String& outPath) {
+  sdTake();
   if (SD.exists(outPath.c_str())) SD.remove(outPath.c_str());
   File out = SD.open(outPath.c_str(), FILE_WRITE);
-  if (!out) return 0;
+  if (!out) { sdGive(); return 0; }
 
   bool headerWritten = false;
   int  count = 0;
   uint8_t buf[512];
 
   File root = SD.open("/logs");
-  if (!root) { out.close(); return 0; }
+  if (!root) { out.close(); sdGive(); return 0; }
   while (true) {
     File macDir = root.openNextFile();
     if (!macDir) break;
@@ -252,12 +274,14 @@ static int buildMergedCsv(const String& outPath) {
   }
   root.close();
   out.close();
+  sdGive();
   return count;
 }
 
 static void markAllCsvsDone() {
+  sdTake();
   File root = SD.open("/logs");
-  if (!root) return;
+  if (!root) { sdGive(); return; }
   while (true) {
     File macDir = root.openNextFile();
     if (!macDir) break;
@@ -279,6 +303,7 @@ static void markAllCsvsDone() {
     sub.close();
   }
   root.close();
+  sdGive();
 }
 
 void runHomeUploads() {
@@ -298,10 +323,12 @@ void runHomeUploads() {
     uploadRunning = false;
     return;
   }
-  { File mf = SD.open(mergePath.c_str());
+  { sdTake();
+    File mf = SD.open(mergePath.c_str());
     Serial.printf("[HOME] Merged %d file(s) → %s (%d B)\n",
                   mergedCount, mergePath.c_str(), mf ? (int)mf.size() : 0);
-    if (mf) mf.close(); }
+    if (mf) mf.close();
+    sdGive(); }
 
   Serial.printf("[HOME] Connecting to %s ...", cfg.homeSsid);
   esp_now_deinit();
@@ -318,7 +345,9 @@ void runHomeUploads() {
     Serial.println("[HOME] Connect failed — restoring AP");
     nestLedOff(); nestLedFlashEvent(evNestUploadFail);
     homeStatus = 2;
+    sdTake();
     SD.remove(mergePath.c_str());
+    sdGive();
     WiFi.disconnect(true); delay(200);
     restoreNestAP();
     uploadRunning = false;
@@ -329,7 +358,9 @@ void runHomeUploads() {
   bool wOk = cfg.wigleBasicToken[0] ? uploadFileToWigle(mergePath,   "WASP_merged.csv") : true;
   bool dOk = cfg.wdgwarsApiKey[0]   ? uploadFileToWdgwars(mergePath, "WASP_merged.csv") : true;
 
+  sdTake();
   SD.remove(mergePath.c_str());
+  sdGive();
 
   taskENTER_CRITICAL(&gLock);
   if (cfg.wigleBasicToken[0])
