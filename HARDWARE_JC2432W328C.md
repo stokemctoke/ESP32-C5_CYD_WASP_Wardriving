@@ -39,7 +39,7 @@
 | **SDA Pin** | GPIO33 |
 | **SCL Pin** | GPIO32 |
 | **Reset Pin (active low)** | GPIO25 |
-| **IRQ Pin** | GPIO36 (optional; not used in W.A.S.P. polling mode) |
+| **IRQ Pin** | GPIO21 (shared with TFT backlight; not used — W.A.S.P. polls instead) |
 
 **Protocol:**
 - After power-up or RST pulse, wait ≥50 ms before first I²C read
@@ -59,7 +59,7 @@
 **Differences vs. Resistive XPT2046:**
 - Capacitive = always-on, no pressure sensing; responds to skin/conductive stylus
 - No calibration needed (ILI9341 and CST820 pixel spaces are 1:1)
-- No interrupt support in W.A.S.P. (polling is simpler and sufficient for UI)
+- No interrupt support in W.A.S.P.: CST820 INT is GPIO21, which collides with the TFT backlight on this board; polling is simpler and sufficient for UI
 - ~1/10th the code compared to XPT2046 SPI driver
 
 ---
@@ -113,12 +113,11 @@
 | 15 | TFT_CS | Out | SPI display chip select |
 | 18 | SD_SCLK | Out | SPI SD clock |
 | 19 | SD_MISO | In | SPI SD read data |
-| 21 | TFT_BACKLIGHT | Out | PWM backlight (LEDC channel) |
+| 21 | TFT_BACKLIGHT / CST820_INT | Out | PWM backlight (LEDC); CST820 INT shares this pin — touch is polled |
 | 23 | SD_MOSI | Out | SPI SD write data |
 | 25 | TOUCH_RST | Out | CST820 reset (active low) |
 | 32 | TOUCH_SCL | Out | I²C touch clock |
 | 33 | TOUCH_SDA | In/Out | I²C touch data |
-| 36 | TOUCH_IRQ | In | CST820 interrupt (not used; polling instead) |
 | GND | — | — | Shared between all subsystems |
 | 3.3V | — | — | Shared between all subsystems |
 

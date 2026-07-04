@@ -24,8 +24,8 @@
  *   Display backlight : GPIO21  (PWM via LEDC channel 0)
  *   Display SPI       : HSPI — configured in User_Setup.h above
  *   SD card SPI       : VSPI — CS=5  SCK=18  MISO=19  MOSI=23
- *   Touch SPI         : HSPI shared (CLK=25 MISO=39 MOSI=32 CS=33 IRQ=36)
- *                       If touch is unresponsive swap to CLK=14/MISO=12/MOSI=13
+ *   Touch (CST820)    : I²C @ 400 kHz — SDA=33 SCL=32 RST=25 addr=0x15
+ *                       INT is GPIO21 (shared with backlight); touch is polled
  *
  * ── wasp.cfg keys ────────────────────────────────────────────────────────────
  *   homeSsid / homePsk         Home WiFi credentials
