@@ -50,7 +50,7 @@
 // ── Packet types ─────────────────────────────────────────────────────────────
 #define WASP_PKT_SUMMARY   0x01
 #define WASP_PKT_HEARTBEAT 0x02
-#define WASP_FIRMWARE_VER  10
+#define WASP_FIRMWARE_VER  15
 
 // ── Touch (CST820 capacitive on I²C) ──────────────────────────────────────────
 // JC2432W328C uses a CST820 capacitive controller, not the resistive XPT2046.
