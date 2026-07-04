@@ -1,4 +1,5 @@
 #include "nest_upload.h"
+#include "nest_config.h"
 #include "nest_registry.h"
 #include "nest_led.h"
 #include <SD.h>
@@ -33,6 +34,11 @@ bool isValidFilename(const String& name) {
   return true;
 }
 
+bool isValidUploadToken(const String& token) {
+  if (token.isEmpty() || cfg.uploadToken[0] == '\0') return false;
+  return token == cfg.uploadToken;
+}
+
 void handleRawUpload() {
   WiFiClient client = rawServer.accept();
   if (!client) return;
@@ -49,29 +55,40 @@ void handleRawUpload() {
     return;
   }
 
-  String workerMac, fileName;
+  String uploadToken, workerMac, fileName;
   int fileSize = 0, chunkIndex = 0, totalChunks = 1;
 
   if (isSingle) {
     int s1 = hdr.indexOf(' ');
     int s2 = hdr.indexOf(' ', s1 + 1);
     int s3 = hdr.indexOf(' ', s2 + 1);
-    if (s3 < 0) { client.println("ERR bad header"); client.stop(); return; }
-    workerMac = hdr.substring(s1 + 1, s2);
-    fileName  = hdr.substring(s2 + 1, s3);
-    fileSize  = hdr.substring(s3 + 1).toInt();
+    int s4 = hdr.indexOf(' ', s3 + 1);
+    if (s4 < 0) { client.println("ERR bad header"); client.stop(); return; }
+    uploadToken = hdr.substring(s1 + 1, s2);
+    workerMac   = hdr.substring(s2 + 1, s3);
+    fileName    = hdr.substring(s3 + 1, s4);
+    fileSize    = hdr.substring(s4 + 1).toInt();
   } else {
     int s1 = hdr.indexOf(' ');
     int s2 = hdr.indexOf(' ', s1 + 1);
     int s3 = hdr.indexOf(' ', s2 + 1);
     int s4 = hdr.indexOf(' ', s3 + 1);
     int s5 = hdr.indexOf(' ', s4 + 1);
-    if (s5 < 0) { client.println("ERR bad header"); client.stop(); return; }
-    workerMac   = hdr.substring(s1 + 1, s2);
-    fileName    = hdr.substring(s2 + 1, s3);
-    chunkIndex  = hdr.substring(s3 + 1, s4).toInt();
-    totalChunks = hdr.substring(s4 + 1, s5).toInt();
-    fileSize    = hdr.substring(s5 + 1).toInt();
+    int s6 = hdr.indexOf(' ', s5 + 1);
+    if (s6 < 0) { client.println("ERR bad header"); client.stop(); return; }
+    uploadToken = hdr.substring(s1 + 1, s2);
+    workerMac   = hdr.substring(s2 + 1, s3);
+    fileName    = hdr.substring(s3 + 1, s4);
+    chunkIndex  = hdr.substring(s4 + 1, s5).toInt();
+    totalChunks = hdr.substring(s5 + 1, s6).toInt();
+    fileSize    = hdr.substring(s6 + 1).toInt();
+  }
+
+  if (!isValidUploadToken(uploadToken)) {
+    Serial.println("[NEST] Rejected upload: bad token");
+    client.println("ERR unauthorized");
+    client.stop();
+    return;
   }
 
   if (!sdOk || fileSize <= 0) {
@@ -159,6 +176,12 @@ void handleRawUpload() {
 
 void handleUpload() {
   if (!sdOk) { server.send(503, "text/plain", "SD not ready"); return; }
+
+  if (!isValidUploadToken(server.header("X-Upload-Token"))) {
+    Serial.println("[NEST] Rejected HTTP upload: bad token");
+    server.send(401, "text/plain", "Unauthorized");
+    return;
+  }
 
   String workerMac = server.arg("worker");
   String fileName  = server.arg("file");

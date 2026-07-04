@@ -7,6 +7,7 @@
 extern char nestSsid[33];
 extern char nestPsk[65];
 extern char nestIp[16];
+extern char uploadToken[64];
 
 // ── Sync behaviour ───────────────────────────────────────────────────────────
 extern int syncEvery;

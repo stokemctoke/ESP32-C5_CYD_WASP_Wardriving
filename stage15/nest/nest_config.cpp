@@ -17,8 +17,9 @@ bool parseNestLedEvent(const String& val, LedEvent& ev) {
 }
 
 bool loadConfig() {
-  strlcpy(cfg.apSsid, "WASP-Nest", sizeof(cfg.apSsid));
-  strlcpy(cfg.apPsk,  "waspswarm", sizeof(cfg.apPsk));
+  strlcpy(cfg.apSsid,      "WASP-Nest",              sizeof(cfg.apSsid));
+  strlcpy(cfg.apPsk,       "waspswarm",              sizeof(cfg.apPsk));
+  strlcpy(cfg.uploadToken, WASP_DEFAULT_UPLOAD_TOKEN, sizeof(cfg.uploadToken));
 
   if (SD.exists("/reset.cfg")) {
     Serial.println("[CFG] /reset.cfg found — using compiled defaults, wasp.cfg ignored");
@@ -49,6 +50,7 @@ bool loadConfig() {
     else if (key == "homePsk")         { val.toCharArray(cfg.homePsk,         sizeof(cfg.homePsk));         loaded++; }
     else if (key == "apSsid")          { val.toCharArray(cfg.apSsid,          sizeof(cfg.apSsid));          loaded++; }
     else if (key == "apPsk")           { val.toCharArray(cfg.apPsk,           sizeof(cfg.apPsk));           loaded++; }
+    else if (key == "uploadToken")     { val.toCharArray(cfg.uploadToken,     sizeof(cfg.uploadToken));     loaded++; }
     else if (key == "wigleBasicToken") { val.toCharArray(cfg.wigleBasicToken, sizeof(cfg.wigleBasicToken)); loaded++; }
     else if (key == "wdgwarsApiKey")   { val.toCharArray(cfg.wdgwarsApiKey,   sizeof(cfg.wdgwarsApiKey));   loaded++; }
     else if (key == "nestLedBoot")        parseNestLedEvent(val, evNestBoot);
@@ -65,6 +67,7 @@ bool loadConfig() {
   f.close();
   Serial.printf("[CFG] Loaded %d key(s) from /wasp.cfg\n", loaded);
   Serial.printf("[CFG]   AP      : %s\n", cfg.apSsid);
+  Serial.printf("[CFG]   Upload  : %s\n", cfg.uploadToken[0] ? "token set" : "(not set)");
   Serial.printf("[CFG]   Home    : %s\n", cfg.homeSsid[0] ? cfg.homeSsid : "(not set)");
   Serial.printf("[CFG]   WiGLE   : %s\n", cfg.wigleBasicToken[0] ? "token set" : "(not set)");
   Serial.printf("[CFG]   WDGWars : %s\n", cfg.wdgwarsApiKey[0]   ? "key set"   : "(not set)");
