@@ -4,6 +4,7 @@
 #include "nest_config.h"
 #include "nest_upload.h"
 #include "nest_ui.h"
+#include "nest_sd.h"
 #include <Arduino.h>
 #include <SD.h>
 
@@ -276,6 +277,7 @@ void drawWorkerDetail() {
   // Count files for this worker on SD
   int fCount = 0; long fBytes = 0;
   String dir = "/logs/" + String(uiDetailMac12);
+  sdTake();
   File d = SD.open(dir.c_str());
   if (d) {
     while (true) {
@@ -286,6 +288,7 @@ void drawWorkerDetail() {
     }
     d.close();
   }
+  sdGive();
   tft.setTextColor(CLR_LABEL, CLR_BG);
   snprintf(buf, sizeof(buf), "Files on SD: %d  (%ld KB)", fCount, fBytes / 1024);
   tft.drawString(buf, 6, y); y += lh + 4;
@@ -296,8 +299,9 @@ void drawWorkerDetail() {
 // ── FILE BROWSER ─────────────────────────────────────────────────────────────
 static void loadBrowserData() {
   browserEntryCount = 0;
+  sdTake();
   File root = SD.open("/logs");
-  if (!root) { browserLoaded = true; return; }
+  if (!root) { sdGive(); browserLoaded = true; return; }
   while (browserEntryCount < MAX_BROWSER_WORKERS) {
     File entry = root.openNextFile();
     if (!entry) break;
@@ -321,6 +325,7 @@ static void loadBrowserData() {
     }
   }
   root.close();
+  sdGive();
   browserLoaded = true;
 }
 
@@ -368,8 +373,9 @@ void drawFileBrowser() {
 static void loadFileListData() {
   fileEntryCount = 0;
   String path = "/logs/" + String(uiDetailMac12);
+  sdTake();
   File dir = SD.open(path.c_str());
-  if (!dir) { fileListLoaded = true; return; }
+  if (!dir) { sdGive(); fileListLoaded = true; return; }
   while (fileEntryCount < MAX_FILE_ENTRIES) {
     File entry = dir.openNextFile();
     if (!entry) break;
@@ -381,6 +387,7 @@ static void loadFileListData() {
     entry.close();
   }
   dir.close();
+  sdGive();
   fileListLoaded = true;
 }
 
@@ -591,7 +598,9 @@ void handleTapFileList(int px, int py) {
     bool hitNo  = (px >= mx + mw - 92  && px <= mx + mw - 6  && py >= my + 46 && py <= my + 72);
     if (hitYes && fileModalIdx >= 0 && fileModalIdx < fileEntryCount) {
       String path = "/logs/" + String(uiDetailMac12) + "/" + String(fileEntries[fileModalIdx].name);
+      sdTake();
       SD.remove(path.c_str());
+      sdGive();
       Serial.printf("[UI] Deleted %s\n", path.c_str());
       fileModalShown = false; fileModalIdx = -1;
       uiInvalidateFileList(); uiInvalidateBrowser();

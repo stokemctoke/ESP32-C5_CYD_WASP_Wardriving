@@ -1,6 +1,7 @@
 #include "nest_upload.h"
 #include "nest_registry.h"
 #include "nest_led.h"
+#include "nest_sd.h"
 #include <SD.h>
 #include <WiFi.h>
 #include <Arduino.h>
@@ -89,6 +90,7 @@ void handleRawUpload() {
 
   String dir  = "/logs/" + workerMac;
   String path = dir + "/" + fileName;
+  sdTake();
   if (!SD.exists("/logs")) SD.mkdir("/logs");
   if (!SD.exists(dir))     SD.mkdir(dir);
 
@@ -100,7 +102,12 @@ void handleRawUpload() {
     f = SD.open(path.c_str(), FILE_APPEND);
     if (!f) f = SD.open(path.c_str(), FILE_WRITE);
   }
-  if (!f) { client.println("ERR sd open failed"); client.stop(); return; }
+  if (!f) {
+    sdGive();
+    client.println("ERR sd open failed");
+    client.stop();
+    return;
+  }
 
   client.println("READY");
 
@@ -128,6 +135,7 @@ void handleRawUpload() {
 
   if (sdFail) {
     SD.remove(path.c_str());
+    sdGive();
     client.println("ERR sd write failed");
     client.stop();
     return;
@@ -136,11 +144,13 @@ void handleRawUpload() {
   Serial.printf("[NEST] recv %u/%d B for %s\n", (unsigned)written, fileSize, fileName.c_str());
 
   if ((int)written < fileSize) {
+    SD.remove(path.c_str());
+    sdGive();
     client.println("ERR transfer incomplete");
     client.stop();
-    SD.remove(path.c_str());
     return;
   }
+  sdGive();
 
   client.println("OK");
   client.stop();
@@ -169,22 +179,28 @@ void handleUpload() {
   String dir  = "/logs/" + workerMac;
   String path = dir + "/" + fileName;
 
+  String body = server.arg("plain");
+  sdTake();
   if (!SD.exists("/logs")) SD.mkdir("/logs");
   if (!SD.exists(dir))     SD.mkdir(dir);
-
-  String body = server.arg("plain");
   if (SD.exists(path.c_str())) SD.remove(path.c_str());
   File f = SD.open(path.c_str(), FILE_WRITE);
-  if (!f) { server.send(500, "text/plain", "SD open failed"); return; }
+  if (!f) {
+    sdGive();
+    server.send(500, "text/plain", "SD open failed");
+    return;
+  }
   size_t wrote = f.print(body);
   f.close();
   if (wrote < body.length()) {
     SD.remove(path.c_str());
+    sdGive();
     Serial.printf("[NEST] SD write short %u/%u for %s\n",
                   (unsigned)wrote, (unsigned)body.length(), path.c_str());
     server.send(500, "text/plain", "SD write failed");
     return;
   }
+  sdGive();
 
   taskENTER_CRITICAL(&gLock);
   snprintf(lastSyncStr, sizeof(lastSyncStr), "%s  %dB", workerMac.c_str(), body.length());

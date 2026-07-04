@@ -56,8 +56,10 @@
 #include "nest_display.h"
 #include "nest_touch.h"
 #include "nest_ui.h"
+#include "nest_sd.h"
 
-bool     sdOk = false;
+bool                sdOk = false;
+SemaphoreHandle_t   sdMutex = nullptr;
 SPIClass sdSpi(VSPI);
 
 static void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
@@ -112,6 +114,7 @@ void setup() {
   drawHeader();
 
   Serial.println("[BOOT] 3/9 SD init");
+  sdMutex = xSemaphoreCreateMutex();
   sdSpi.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
   drawBootMsg("SD...");
   if (SD.begin(SD_CS, sdSpi)) {
