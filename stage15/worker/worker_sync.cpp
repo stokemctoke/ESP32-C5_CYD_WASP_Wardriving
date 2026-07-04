@@ -31,7 +31,7 @@ bool hasPendingFiles() {
 bool connectToNest() {
   sendHeartbeat();
   delay(50);
-  esp_now_deinit();
+  deinitEspNow();
   WiFi.mode(WIFI_STA);
   WiFi.begin(nestSsid, nestPsk);
   unsigned long t0 = millis();

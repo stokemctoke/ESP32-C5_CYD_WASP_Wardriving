@@ -6,6 +6,7 @@
 #include <esp_wifi.h>
 
 uint32_t lastHeartbeatMs = 0;
+bool     espNowOk        = false;
 
 void onSendResult(const wifi_tx_info_t*, esp_now_send_status_t status) {
   Serial.printf("[WORKER] ESP-NOW TX %s\n",
@@ -13,17 +14,30 @@ void onSendResult(const wifi_tx_info_t*, esp_now_send_status_t status) {
 }
 
 void initEspNow() {
+  espNowOk = false;
   esp_wifi_set_channel(ESPNOW_CHANNEL, WIFI_SECOND_CHAN_NONE);
-  if (esp_now_init() != ESP_OK) { Serial.println("[WORKER] ESP-NOW init FAILED"); return; }
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("[WORKER] ESP-NOW init FAILED");
+    ledSyncFail();
+    return;
+  }
   esp_now_register_send_cb(onSendResult);
   esp_now_peer_info_t peer = {};
   memcpy(peer.peer_addr, NEST_MAC, 6);
   peer.channel = ESPNOW_CHANNEL;
   peer.encrypt = false;
   esp_now_add_peer(&peer);
+  espNowOk = true;
+}
+
+void deinitEspNow() {
+  if (!espNowOk) return;
+  esp_now_deinit();
+  espNowOk = false;
 }
 
 void sendHeartbeat() {
+  if (!espNowOk) return;
   heartbeat_t pkt = {};
   pkt.type        = WASP_PKT_HEARTBEAT;
   pkt.nodeType    = 0;
@@ -41,6 +55,7 @@ void maybeHeartbeat() {
 
 void sendSummary(int wifiTotal, int wifi2g, int wifi5g,
                  int bleCount, int8_t bestRssi) {
+  if (!espNowOk) return;
   extern bool droneMode;
   extern uint32_t cycleCount;
   esp_wifi_set_channel(ESPNOW_CHANNEL, WIFI_SECOND_CHAN_NONE);
