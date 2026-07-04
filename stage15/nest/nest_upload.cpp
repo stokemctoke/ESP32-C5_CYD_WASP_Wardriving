@@ -216,6 +216,7 @@ void handleRawUpload() {
     } else {
       yield();
     }
+    server.handleClient();
   }
   f.close();
 
