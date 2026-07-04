@@ -7,6 +7,7 @@
 extern char nestSsid[33];
 extern char nestPsk[65];
 extern char nestIp[16];
+extern uint8_t nestMac[6];
 
 // ── Sync behaviour ───────────────────────────────────────────────────────────
 extern int syncEvery;
@@ -34,3 +35,4 @@ extern int ledPinB;
 // ── Functions ────────────────────────────────────────────────────────────────
 void loadWorkerConfig();
 bool parseLedEvent(const String& val, LedEvent& ev);
+bool parseNestMac(const String& val, uint8_t mac[6]);

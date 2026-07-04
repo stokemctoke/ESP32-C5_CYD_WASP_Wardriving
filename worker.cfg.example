@@ -31,6 +31,7 @@ ledType=ws2812           # ws2812  → addressable WS2812B/SK6812 on D0 (GPIO3) 
 #nestSsid=WASP-Nest
 #nestPsk=waspswarm
 #nestIp=192.168.4.1
+#nestMac=A4:F0:0F:5D:96:D4   # Nest STA MAC for ESP-NOW (AA:BB:CC:DD:EE:FF)
 
 # ── Scan timing ───────────────────────────────────────────────────────────────
 #syncEvery=25            # sync files to Nest every N scan cycles

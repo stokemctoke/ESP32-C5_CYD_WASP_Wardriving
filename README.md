@@ -282,6 +282,7 @@ Both devices use a simple `key=value` config file on their own SD card. Lines st
 | `nestSsid` | `WASP-Nest` | Nest AP SSID to connect to for sync |
 | `nestPsk` | `waspswarm` | Nest AP password |
 | `nestIp` | `192.168.4.1` | Nest IP address |
+| `nestMac` | `A4:F0:0F:5D:96:D4` | Nest STA MAC for ESP-NOW heartbeats (`AA:BB:CC:DD:EE:FF`) |
 | `syncEvery` | `25` | Sync to nest every N scan cycles |
 | `heartbeatIntervalMs` | `5000` | ms between ESP-NOW heartbeats |
 | `wifiChanMs` | `80` | ms spent per WiFi channel during scan |
