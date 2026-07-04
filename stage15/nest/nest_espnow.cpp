@@ -1,7 +1,20 @@
 #include "nest_espnow.h"
+#include "nest_config.h"
 #include "nest_registry.h"
 #include "nest_led.h"
 #include <Arduino.h>
+
+static bool acceptSwarmId(uint16_t pktSwarmId) {
+  return cfg.swarmId == 0 || pktSwarmId == cfg.swarmId;
+}
+
+static void maybeWarnFirmware(uint8_t fwVer, const uint8_t workerMac[6]) {
+  if (fwVer == 0 || fwVer == WASP_FIRMWARE_VER) return;
+  Serial.printf("[NEST] Firmware mismatch %02X:%02X:%02X:%02X:%02X:%02X: worker=%u nest=%u\n",
+                workerMac[0], workerMac[1], workerMac[2],
+                workerMac[3], workerMac[4], workerMac[5],
+                fwVer, WASP_FIRMWARE_VER);
+}
 
 void onDataRecv(const esp_now_recv_info_t* info, const uint8_t* data, int len) {
   if (!info || !data || len < 1) return;
@@ -9,8 +22,16 @@ void onDataRecv(const esp_now_recv_info_t* info, const uint8_t* data, int len) {
   char mac[18];
 
   if (data[0] == WASP_PKT_HEARTBEAT && len >= 7) {
-    ledHeartbeatFlag = true;
     const heartbeat_t* pkt = (const heartbeat_t*)data;
+    uint16_t pktSwarmId = (len >= 10) ? pkt->swarmId : 0;
+    if (!acceptSwarmId(pktSwarmId)) {
+      Serial.printf("[NEST] Ignored heartbeat from foreign swarm (id %u, filter %u)\n",
+                    pktSwarmId, cfg.swarmId);
+      return;
+    }
+    if (len >= 13) maybeWarnFirmware(pkt->firmwareVer, pkt->workerMac);
+
+    ledHeartbeatFlag = true;
     uint8_t nodeType = (len >= 8) ? pkt->nodeType : 0;
 
     taskENTER_CRITICAL(&gLock);
@@ -40,6 +61,14 @@ void onDataRecv(const esp_now_recv_info_t* info, const uint8_t* data, int len) {
   if (data[0] != WASP_PKT_SUMMARY || len < 36) return;
 
   const scan_summary_t* pkt = (const scan_summary_t*)data;
+  uint16_t pktSwarmId = (len >= 38) ? pkt->swarmId : 0;
+  if (!acceptSwarmId(pktSwarmId)) {
+    Serial.printf("[NEST] Ignored summary from foreign swarm (id %u, filter %u)\n",
+                  pktSwarmId, cfg.swarmId);
+    return;
+  }
+  if (len >= 41) maybeWarnFirmware(pkt->firmwareVer, pkt->workerMac);
+
   taskENTER_CRITICAL(&gLock);
   int idx = findOrAddWorker(pkt->workerMac);
   if (idx >= 0) {
