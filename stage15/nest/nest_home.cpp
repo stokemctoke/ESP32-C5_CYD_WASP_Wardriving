@@ -77,6 +77,7 @@ static bool writeAll(WiFiClientSecure& wc, const uint8_t* data, size_t len, size
 
 static int streamMultipartPost(const char* host, const char* urlPath,
                                 const char* authHeader, const char* authValue,
+                                const char* caCert,
                                 const String& filePath, const String& fileName) {
   File f = SD.open(filePath.c_str());
   if (!f) { Serial.println("[UPLOAD] SD open failed"); return -1; }
@@ -96,7 +97,7 @@ static int streamMultipartPost(const char* host, const char* urlPath,
   Serial.printf("[UPLOAD] heap before TLS: %u\n", ESP.getFreeHeap());
 
   WiFiClientSecure wc;
-  wc.setCACert(ISRG_ROOT_X1);
+  wc.setCACert(caCert);
   wc.setTimeout(30);
 
   uint32_t tConnect = millis();
@@ -195,7 +196,8 @@ static bool uploadFileToWigle(const String& path, const String& fileName) {
   Serial.printf("[WIGLE] Uploading %s...\n", fileName.c_str());
   String auth = String("Basic ") + cfg.wigleBasicToken;
   int code = streamMultipartPost("api.wigle.net", "/api/v2/file/upload",
-                                  "Authorization", auth.c_str(), path, fileName);
+                                  "Authorization", auth.c_str(), ISRG_ROOT_X1,
+                                  path, fileName);
   Serial.printf("[WIGLE] %s  HTTP %d\n", fileName.c_str(), code);
   return (code == 200);
 }
@@ -204,7 +206,8 @@ static bool uploadFileToWdgwars(const String& path, const String& fileName) {
   if (!cfg.wdgwarsApiKey[0]) return false;
   Serial.printf("[WDG] Uploading %s...\n", fileName.c_str());
   int code = streamMultipartPost("wdgwars.pl", "/api/upload-csv",
-                                  "X-API-Key", cfg.wdgwarsApiKey, path, fileName);
+                                  "X-API-Key", cfg.wdgwarsApiKey, GTS_ROOT_R4,
+                                  path, fileName);
   Serial.printf("[WDG] %s  HTTP %d\n", fileName.c_str(), code);
   return (code == 200);
 }
