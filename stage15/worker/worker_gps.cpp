@@ -83,7 +83,7 @@ void setClockFromGPS() {
   t.tm_hour = gps.time.hour();
   t.tm_min  = gps.time.minute();
   t.tm_sec  = gps.time.second();
-  time_t epoch = mktime(&t);
+  time_t epoch = timegm(&t);
   struct timeval tv = { epoch, 0 };
   settimeofday(&tv, nullptr);
   clockSet = true;
