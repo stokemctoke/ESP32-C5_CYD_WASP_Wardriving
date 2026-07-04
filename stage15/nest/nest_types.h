@@ -23,9 +23,8 @@
 
 // ── Worker registry ───────────────────────────────────────────────────────────
 #define MAX_WORKERS        8
-#define WORKER_TIMEOUT_MS  30000
-#define WORKER_DISPLAY_MS  90000
-#define WORKER_REMOVE_MS  300000
+#define WORKER_TIMEOUT_MS  30000   // active / in-range; hide from home list after this
+#define WORKER_REMOVE_MS  300000   // free registry slot after 5 min
 
 // ── Display layout (240 × 320 portrait) ──────────────────────────────────────
 #define HEADER_H  28
