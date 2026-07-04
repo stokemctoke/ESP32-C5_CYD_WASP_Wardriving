@@ -158,7 +158,9 @@ void setup() {
   }
 
   Serial.println("[BOOT] 7/9 HTTP servers");
-  server.on("/upload", HTTP_POST, handleUpload);
+  static const char* uploadHdrKeys[] = {"X-Worker", "X-File"};
+  server.collectHeaders(uploadHdrKeys, 2);
+  server.on("/upload", HTTP_POST, handleUpload, handleUploadBody);
   server.begin();
   rawServer.begin();
   Serial.println(" HTTP server started (port 80)");

@@ -12,6 +12,33 @@ char       lastSyncStr[48] = "none";
 
 extern bool sdOk;
 
+static constexpr int HTTP_UPLOAD_MAX_BODY = 16 * 1024;
+
+static struct {
+  File     sdFile;
+  size_t   written;
+  int      contentLen;
+  bool     ok;
+  int      httpCode;
+  const char* errText;
+  String   path;
+  String   workerMac;
+} gHttpUp;
+
+static bool resolveUploadMeta(String& workerMac, String& fileName) {
+  workerMac = server.header("X-Worker");
+  fileName  = server.header("X-File");
+  if (!workerMac.isEmpty() && !fileName.isEmpty()) {
+    return isValidMac(workerMac) && isValidFilename(fileName);
+  }
+  if (server.hasArg("worker") && server.hasArg("file")) {
+    workerMac = server.arg("worker");
+    fileName  = server.arg("file");
+    return isValidMac(workerMac) && isValidFilename(fileName);
+  }
+  return false;
+}
+
 bool isValidMac(const String& mac) {
   if (mac.length() != 12) return false;
   for (unsigned int i = 0; i < mac.length(); i++) {
@@ -174,44 +201,85 @@ void handleRawUpload() {
   }
 }
 
+void handleUploadBody() {
+  HTTPRaw& raw = server.raw();
+
+  switch (raw.status) {
+  case RAW_START: {
+    memset(&gHttpUp, 0, sizeof(gHttpUp));
+    gHttpUp.ok         = true;
+    gHttpUp.httpCode   = 200;
+    gHttpUp.contentLen = server.clientContentLength();
+    if (!isValidUploadToken(server.header("X-Upload-Token"))) {
+      gHttpUp.ok = false; gHttpUp.httpCode = 401; gHttpUp.errText = "Unauthorized";
+      return;
+    }
+    if (gHttpUp.contentLen <= 0 || gHttpUp.contentLen > HTTP_UPLOAD_MAX_BODY) {
+      gHttpUp.ok = false;
+      gHttpUp.httpCode = (gHttpUp.contentLen > HTTP_UPLOAD_MAX_BODY) ? 413 : 400;
+      gHttpUp.errText  = (gHttpUp.contentLen > HTTP_UPLOAD_MAX_BODY) ? "Too large" : "Bad length";
+      return;
+    }
+    if (!sdOk) {
+      gHttpUp.ok = false; gHttpUp.httpCode = 503; gHttpUp.errText = "SD not ready";
+      return;
+    }
+    String workerMac, fileName;
+    if (!resolveUploadMeta(workerMac, fileName)) {
+      gHttpUp.ok = false; gHttpUp.httpCode = 400; gHttpUp.errText = "Bad params";
+      return;
+    }
+    gHttpUp.workerMac = workerMac;
+    String dir = "/logs/" + workerMac;
+    gHttpUp.path = dir + "/" + fileName;
+    if (!SD.exists("/logs")) SD.mkdir("/logs");
+    if (!SD.exists(dir))     SD.mkdir(dir);
+    if (SD.exists(gHttpUp.path.c_str())) SD.remove(gHttpUp.path.c_str());
+    gHttpUp.sdFile = SD.open(gHttpUp.path.c_str(), FILE_WRITE);
+    if (!gHttpUp.sdFile) {
+      gHttpUp.ok = false; gHttpUp.httpCode = 500; gHttpUp.errText = "SD open failed";
+    }
+    break;
+  }
+  case RAW_WRITE: {
+    if (!gHttpUp.ok || !gHttpUp.sdFile) return;
+    size_t n = gHttpUp.sdFile.write(raw.buf, raw.currentSize);
+    gHttpUp.written += n;
+    if (n < raw.currentSize) {
+      gHttpUp.ok = false; gHttpUp.httpCode = 500; gHttpUp.errText = "SD write failed";
+    }
+    break;
+  }
+  case RAW_END: {
+    if (gHttpUp.sdFile) gHttpUp.sdFile.close();
+    if (gHttpUp.ok && (int)gHttpUp.written != gHttpUp.contentLen) {
+      gHttpUp.ok = false; gHttpUp.httpCode = 500; gHttpUp.errText = "Transfer incomplete";
+    }
+    if (!gHttpUp.ok && gHttpUp.path.length()) SD.remove(gHttpUp.path.c_str());
+    if (gHttpUp.ok) {
+      taskENTER_CRITICAL(&gLock);
+      snprintf(lastSyncStr, sizeof(lastSyncStr), "%s  %dB",
+               gHttpUp.workerMac.c_str(), gHttpUp.contentLen);
+      taskEXIT_CRITICAL(&gLock);
+      Serial.printf("[NEST] Saved %s (%d bytes)\n", gHttpUp.path.c_str(), gHttpUp.contentLen);
+    }
+    break;
+  }
+  case RAW_ABORTED: {
+    gHttpUp.ok = false; gHttpUp.httpCode = 500; gHttpUp.errText = "Upload aborted";
+    if (gHttpUp.sdFile) gHttpUp.sdFile.close();
+    if (gHttpUp.path.length()) SD.remove(gHttpUp.path.c_str());
+    break;
+  }
+  default:
+    break;
+  }
+}
+
 void handleUpload() {
-  if (!sdOk) { server.send(503, "text/plain", "SD not ready"); return; }
-
-  if (!isValidUploadToken(server.header("X-Upload-Token"))) {
-    Serial.println("[NEST] Rejected HTTP upload: bad token");
-    server.send(401, "text/plain", "Unauthorized");
+  if (!gHttpUp.ok) {
+    server.send(gHttpUp.httpCode, "text/plain", gHttpUp.errText ? gHttpUp.errText : "Upload failed");
     return;
   }
-
-  String workerMac = server.arg("worker");
-  String fileName  = server.arg("file");
-
-  if (!isValidMac(workerMac))     { server.send(400, "text/plain", "Bad worker");   return; }
-  if (!isValidFilename(fileName)) { server.send(400, "text/plain", "Bad filename"); return; }
-
-  String dir  = "/logs/" + workerMac;
-  String path = dir + "/" + fileName;
-
-  if (!SD.exists("/logs")) SD.mkdir("/logs");
-  if (!SD.exists(dir))     SD.mkdir(dir);
-
-  String body = server.arg("plain");
-  if (SD.exists(path.c_str())) SD.remove(path.c_str());
-  File f = SD.open(path.c_str(), FILE_WRITE);
-  if (!f) { server.send(500, "text/plain", "SD open failed"); return; }
-  size_t wrote = f.print(body);
-  f.close();
-  if (wrote < body.length()) {
-    SD.remove(path.c_str());
-    Serial.printf("[NEST] SD write short %u/%u for %s\n",
-                  (unsigned)wrote, (unsigned)body.length(), path.c_str());
-    server.send(500, "text/plain", "SD write failed");
-    return;
-  }
-
-  taskENTER_CRITICAL(&gLock);
-  snprintf(lastSyncStr, sizeof(lastSyncStr), "%s  %dB", workerMac.c_str(), body.length());
-  taskEXIT_CRITICAL(&gLock);
-  Serial.printf("[NEST] Saved %s (%d bytes)\n", path.c_str(), body.length());
   server.send(200, "text/plain", "OK");
 }
