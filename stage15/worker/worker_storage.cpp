@@ -1,6 +1,7 @@
 #include "worker_storage.h"
 #include "worker_gps.h"
 #include "worker_config.h"
+#include "worker_sync.h"
 
 File logFile;
 String logPath;
@@ -19,7 +20,10 @@ void maybeFlush() {
     Serial.printf("[SD] Rotating log: %s reached %u B (cap %d)\n",
                   logPath.c_str(), (unsigned)logFile.size(), maxLogBytes);
     logFile.close();
-    openLogFile();
+    if (!openLogFile()) {
+      sdOk = false;
+      Serial.println("[SD] Log rotation failed — logging disabled");
+    }
   }
 }
 
