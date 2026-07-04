@@ -96,11 +96,11 @@ void setup() {
   Serial.println("========================================");
   Serial.printf("[BOOT] heap=%u\n", ESP.getFreeHeap());
 
-  Serial.println("[BOOT] 1/9 backlight");
+  Serial.println("[BOOT] 1/10 backlight");
   ledcAttach(TFT_BACKLIGHT, 5000, 8);
   ledcWrite(TFT_BACKLIGHT, 255);
 
-  Serial.println("[BOOT] 2/9 tft.init()");
+  Serial.println("[BOOT] 2/10 tft.init()");
   tft.init();
   // GPIO 4 (NEST_LED_R) free after tft.init() — TFT_RST pulse completed
   pinMode(NEST_LED_R, OUTPUT);
@@ -113,7 +113,7 @@ void setup() {
   tft.fillScreen(CLR_BG);
   drawHeader();
 
-  Serial.println("[BOOT] 3/9 SD init");
+  Serial.println("[BOOT] 3/10 SD init");
   sdMutex = xSemaphoreCreateMutex();
   sdSpi.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
   drawBootMsg("SD...");
@@ -125,7 +125,7 @@ void setup() {
     Serial.println(" SD FAIL — uploads will be rejected");
   }
 
-  Serial.println("[BOOT] 4/9 loadConfig()");
+  Serial.println("[BOOT] 4/10 loadConfig()");
   drawBootMsg("Reading config...");
   loadConfig();
   if (cfg.homeSsid[0]) {
@@ -137,7 +137,7 @@ void setup() {
     Serial.println(" Home WiFi  : not configured");
   }
 
-  Serial.println("[BOOT] 5/9 WiFi mode + softAP");
+  Serial.println("[BOOT] 5/10 WiFi mode + softAP");
   drawBootMsg("WiFi...");
   WiFi.onEvent(onWiFiEvent);
   WiFi.mode(WIFI_AP_STA);
@@ -151,7 +151,7 @@ void setup() {
   Serial.printf(" AP: %-12s  IP: %s  ch: %d\n",
                 cfg.apSsid, WiFi.softAPIP().toString().c_str(), ESPNOW_CHANNEL);
 
-  Serial.println("[BOOT] 6/9 esp_now_init");
+  Serial.println("[BOOT] 6/10 esp_now_init");
   esp_wifi_set_channel(ESPNOW_CHANNEL, WIFI_SECOND_CHAN_NONE);
   if (esp_now_init() != ESP_OK) {
     Serial.println(" ERROR: esp_now_init() failed");
@@ -160,20 +160,25 @@ void setup() {
     Serial.printf(" ESP-NOW ready on channel %d\n", ESPNOW_CHANNEL);
   }
 
+<<<<<<< HEAD
   Serial.println("[BOOT] 7/9 HTTP servers");
   static const char* uploadHdrKeys[] = {"X-Worker", "X-File"};
   server.collectHeaders(uploadHdrKeys, 2);
   server.on("/upload", HTTP_POST, handleUpload, handleUploadBody);
+=======
+  Serial.println("[BOOT] 7/10 HTTP servers");
+  server.on("/upload", HTTP_POST, handleUpload);
+>>>>>>> origin/cursor/fix-issue-43-hygiene-f920
   server.begin();
   rawServer.begin();
   Serial.println(" HTTP server started (port 80)");
   Serial.println(" Raw upload server started (port 8080)");
 
-  Serial.println("[BOOT] 8/9 uploadTask spawn");
+  Serial.println("[BOOT] 8/10 uploadTask spawn");
   xTaskCreatePinnedToCore(uploadTask, "upload", 12288, NULL, 5, NULL, 0);
   startHomeUploadTask();
 
-  Serial.println("[BOOT] 9/9 touch init");
+  Serial.println("[BOOT] 9/10 touch init");
   touchBegin();
   Serial.println(" Touch ready");
 
