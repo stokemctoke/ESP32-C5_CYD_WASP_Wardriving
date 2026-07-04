@@ -176,7 +176,7 @@ void drawHome() {
   // Worker rows
   int row = 0;
   for (int i = 0; i < MAX_WORKERS && row < MAX_ROWS; i++) {
-    if (snap[i].lastSeenMs > 0 && (now - snap[i].lastSeenMs) < WORKER_DISPLAY_MS)
+    if (snap[i].lastSeenMs > 0 && (now - snap[i].lastSeenMs) < WORKER_TIMEOUT_MS)
       drawWorkerRow(row++, snap[i]);
   }
   for (; row < MAX_ROWS; row++) {
@@ -556,7 +556,7 @@ void handleTapHome(int px, int py) {
     uint32_t now = millis();
     int visible = 0;
     for (int i = 0; i < MAX_WORKERS; i++) {
-      if (snap[i].lastSeenMs > 0 && (now - snap[i].lastSeenMs) < WORKER_DISPLAY_MS) {
+      if (snap[i].lastSeenMs > 0 && (now - snap[i].lastSeenMs) < WORKER_TIMEOUT_MS) {
         if (visible == row) {
           snprintf(uiDetailMac, sizeof(uiDetailMac), "%02X:%02X:%02X:%02X:%02X:%02X",
                    snap[i].mac[0], snap[i].mac[1], snap[i].mac[2],
