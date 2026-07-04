@@ -22,10 +22,68 @@ bool hasPendingFiles() {
     String name = String(entry.name());
     size_t sz = entry.size();
     entry.close();
+    if (!isDir && name.endsWith(".csv.defer")) { found = true; break; }
     if (!isDir && name.endsWith(".csv") && sz > 0) { found = true; break; }
   }
   dir.close();
   return found;
+}
+
+static int countDeferFiles() {
+  File dir = SD.open("/logs");
+  if (!dir) return 0;
+  int n = 0;
+  while (true) {
+    File entry = dir.openNextFile();
+    if (!entry) break;
+    bool isDir = entry.isDirectory();
+    String name = String(entry.name());
+    entry.close();
+    if (!isDir && name.endsWith(".csv.defer")) n++;
+  }
+  dir.close();
+  return n;
+}
+
+static void restoreDeferredFiles() {
+  File dir = SD.open("/logs");
+  if (!dir) return;
+  while (true) {
+    File entry = dir.openNextFile();
+    if (!entry) break;
+    String n = String(entry.name());
+    bool d = entry.isDirectory();
+    entry.close();
+    if (!d && n.endsWith(".csv.defer")) {
+      String op = "/logs/" + n;
+      SD.rename(op.c_str(), op.substring(0, op.length() - 6).c_str());
+      Serial.printf("[SYNC]  Restored %s for retry\n", n.c_str());
+    }
+  }
+  dir.close();
+}
+
+static int scanCsvQueue(String* queueName, int* queueSize, int maxQueue) {
+  int totalCsv = 0;
+  File dir = SD.open("/logs");
+  if (!dir) return 0;
+  while (true) {
+    File entry = dir.openNextFile();
+    if (!entry) break;
+    String n = String(entry.name());
+    bool d = entry.isDirectory();
+    int s = (int)entry.size();
+    entry.close();
+    if (!d && n.endsWith(".csv") && s > 0) {
+      if (totalCsv < maxQueue) {
+        queueName[totalCsv] = n;
+        queueSize[totalCsv] = s;
+      }
+      totalCsv++;
+    }
+  }
+  dir.close();
+  return totalCsv;
 }
 
 bool connectToNest() {
@@ -189,36 +247,38 @@ void syncFiles() {
   const int MAX_QUEUE = 100;
   String queueName[MAX_QUEUE];
   int queueSize[MAX_QUEUE];
-  int queueLen = 0;
-  {
-    File dir = SD.open("/logs");
-    if (dir) {
-      while (queueLen < MAX_QUEUE) {
-        File entry = dir.openNextFile();
-        if (!entry) break;
-        String n = String(entry.name());
-        bool d = entry.isDirectory();
-        int s = (int)entry.size();
-        entry.close();
-        if (!d && n.endsWith(".csv") && s > 0) {
-          queueName[queueLen] = n;
-          queueSize[queueLen] = s;
-          queueLen++;
-        }
-      }
-      dir.close();
-    }
+  int deferCount = countDeferFiles();
+  int totalCsv = scanCsvQueue(queueName, queueSize, MAX_QUEUE);
+  int queueLen = min(totalCsv, MAX_QUEUE);
+
+  if (totalCsv > MAX_QUEUE) {
+    Serial.printf("[SYNC] WARN: %d file(s) pending — processing %d per pass\n",
+                  totalCsv, MAX_QUEUE);
   }
-  Serial.printf("[SYNC] %d file(s) queued\n", queueLen);
+  Serial.printf("[SYNC] %d file(s) queued", queueLen);
+  if (totalCsv > MAX_QUEUE) Serial.printf(" (%d total)", totalCsv);
+  Serial.println();
 
   bool nestAttempted = false;
-  if (queueLen > 0) {
+  if (queueLen > 0 || deferCount > 0) {
     nestAttempted = true;
     if (!connectToNest()) {
       Serial.println("[SYNC] Nest WiFi unreachable — aborting sync");
       queueLen = 0;
     } else {
       Serial.printf("[SYNC] Connected  IP: %s\n", WiFi.localIP().toString().c_str());
+      if (deferCount > 0) {
+        restoreDeferredFiles();
+        totalCsv = scanCsvQueue(queueName, queueSize, MAX_QUEUE);
+        queueLen = min(totalCsv, MAX_QUEUE);
+        if (totalCsv > MAX_QUEUE) {
+          Serial.printf("[SYNC] WARN: %d file(s) pending — processing %d per pass\n",
+                        totalCsv, MAX_QUEUE);
+        }
+        Serial.printf("[SYNC] %d file(s) queued after defer restore", queueLen);
+        if (totalCsv > MAX_QUEUE) Serial.printf(" (%d total)", totalCsv);
+        Serial.println();
+      }
     }
   }
 
@@ -329,24 +389,6 @@ void syncFiles() {
   }
 
   if (nestAttempted) disconnectFromNest();
-
-  {
-    File dir = SD.open("/logs");
-    if (dir) {
-      while (true) {
-        File entry = dir.openNextFile();
-        if (!entry) break;
-        String n = String(entry.name());
-        bool d = entry.isDirectory();
-        entry.close();
-        if (!d && n.endsWith(".csv.defer")) {
-          String op = "/logs/" + n;
-          SD.rename(op.c_str(), op.substring(0, op.length() - 6).c_str());
-        }
-      }
-      dir.close();
-    }
-  }
 
   SPI.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
   sdOk = SD.begin(SD_CS, SPI);
