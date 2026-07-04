@@ -186,7 +186,7 @@ LED type, brightness, and all flash patterns are set per-worker in `/worker.cfg`
 | 13 | LED config via SD — all flash patterns (colour, count, timing) tuneable in wasp.cfg / worker.cfg without reflash | ✅ Complete |
 | 14 | Fast sync + upload fixes — single-connect chunked upload confirmed; WiGLE column order fix; ESP-NOW restore after failed nest connect | ✅ Complete |
 | 15 | Modular refactor — worker split into 9 modules; nest split into 8 modules. Future changes touch only the relevant file | ✅ Complete |
-| 16 | Nest touch UI — capacitive CST820 (I²C) driver, stack-based menu, fade transitions, file browser, worker detail, settings. Invalidation-driven rendering eliminates flicker on detail screens | ✅ Complete |
+| 16 | Nest touch UI (`stage15/nest/`) — capacitive CST820 (I²C) driver, stack-based menu, fade transitions, file browser, worker detail, settings. Invalidation-driven rendering eliminates flicker on detail screens. No separate `stage16/` folder | ✅ Complete |
 
 ---
 
