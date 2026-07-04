@@ -184,6 +184,7 @@ void loop() {
 
   handleTouch();
   touchDiag();
+  nestLedTick();
 
   if (ledHeartbeatFlag) { ledHeartbeatFlag = false; nestLedFlashEvent(evNestHeartbeat); }
 
