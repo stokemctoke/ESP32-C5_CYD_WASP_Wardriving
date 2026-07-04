@@ -38,9 +38,10 @@ void deinitEspNow() {
 
 void sendHeartbeat() {
   if (!espNowOk) return;
+  extern bool droneMode;
   heartbeat_t pkt = {};
   pkt.type        = WASP_PKT_HEARTBEAT;
-  pkt.nodeType    = 0;
+  pkt.nodeType    = droneMode ? 1 : 0;
   pkt.firmwareVer = WASP_FIRMWARE_VER;
   WiFi.macAddress(pkt.workerMac);
   esp_now_send(nestMac, (uint8_t*)&pkt, sizeof(pkt));
