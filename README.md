@@ -143,15 +143,18 @@ The XIAO Expansion Board v1.2 exposes the following connections used by W.A.S.P.
 
 | State | Colour | Pattern |
 |---|---|---|
-| Boot / power-on | White | 3× quick flash (50 ms each) |
-| GPS acquiring | Amber `#FAA307` | Slow pulse — 800 ms on / 800 ms off |
-| GPS fix acquired | Cyan `#00FFFF` | 2× flash |
-| Scan cycle start | Yellow `#FFFF00` | 1× flash (100 ms) |
-| Connecting to Nest AP | Blue `#4488FF` | Fast blink (200 ms) |
-| Sync success | Green `#00FF00` | 2× flash |
-| Sync fail / nest unreachable | Red `#FF0000` | 3× fast flash |
-| Chunked upload failed (file → .defer) | Orange `#FF6600` | 4× fast flash |
-| Low heap warning | Red `#FF0000` | 1× slow pulse (400 ms) |
+| Boot / power-on | White `#FFFFFF` | 3× quick flash (50 ms each) |
+| GPS acquiring | Amber `#FF3C00` | Continuous toggle — 400 ms on / 400 ms off |
+| GPS fix first acquired | Lime `#64FF00` | 4× flash (400 ms on / 300 ms off) |
+| GPS has fix | Lime `#64FF00` | 2× flash (150 ms on / 100 ms off) |
+| Scan cycle start | Yellow `#FFDC00` | 1× flash (100 ms) |
+| Connecting to Nest AP | Orange `#FF6400` | Continuous toggle — 200 ms on / 200 ms off |
+| Sync success | Green `#00FF00` | 2× flash (150 ms on / 100 ms off) |
+| Sync fail / nest unreachable | Red `#FF0000` | 3× fast flash (80 ms) |
+| Chunked upload failed (file → .defer) | Orange `#FF6400` | 4× fast flash (80 ms) |
+| Low heap warning | Red `#FF0000` | 1× flash (400 ms) |
+| Drone connection pulse | Blue `#0050FF` | 2× flash (200 ms on / 100 ms off) |
+| ESP-NOW heartbeat / idle | Pink `#FF69B4` | 2× flash (80 ms) |
 
 LED type, brightness, and all flash patterns are set per-worker in `/worker.cfg` on the worker SD card. See `worker.cfg.example`.
 
@@ -159,9 +162,12 @@ LED type, brightness, and all flash patterns are set per-worker in `/worker.cfg`
 
 | State | Colour | Pattern |
 |---|---|---|
-| Boot / power-on | White (R+G+B) | 3× quick flash (50 ms each) |
-| Worker heartbeat received | Green | 1× brief flash (50 ms) |
-| File chunk / sync received | Blue | 1× flash (80 ms) per chunk |
+| Boot / power-on | White `#FFFFFF` | 3× quick flash (50 ms each) |
+| Worker heartbeat received | Pink `#FF69B4` | 2× flash (80 ms) |
+| File chunk / sync received | Blue `#0050FF` | 1× flash (80 ms) per chunk |
+| Home upload in progress | Magenta `#FF00B4` | Solid on |
+| Home upload success | Lime `#64FF00` | 2× flash (200 ms) |
+| Home upload failed | Red `#FF0000` | 3× flash (200 ms) |
 
 > GPIO 4 (red channel) is shared with `TFT_RST` in `TFT_eSPI`'s `User_Setup.h`. It is reclaimed as a plain output immediately after `tft.init()` completes — the reset pulse only fires once at startup.
 
@@ -251,11 +257,11 @@ Both devices use a simple `key=value` config file on their own SD card. Lines st
 | `wigleBasicToken` | — | WiGLE 'Encoded for use' API token |
 | `wdgwarsApiKey` | — | WDGWars API key (64 hex chars) |
 | `nestLedBoot` | `FFFFFF,3,50,50` | LED event: `colour(hex),flashes,onMs,offMs` |
-| `nestLedHeartbeat` | `00FF00,1,50,50` | Flash on worker heartbeat received |
-| `nestLedChunk` | `0000FF,1,80,80` | Flash on file chunk received |
-| `nestLedUploadAct` | `FFFF00,1,80,80` | Flash while home upload in progress |
-| `nestLedUploadOK` | `00FF00,2,80,80` | Flash on successful home upload |
-| `nestLedUploadFail` | `FF0000,3,80,80` | Flash on failed home upload |
+| `nestLedHeartbeat` | `FF69B4,2,80,80` | Flash on worker heartbeat received |
+| `nestLedChunk` | `0050FF,1,80,0` | Flash on file chunk received |
+| `nestLedUploadAct` | `FF00B4,0,0,0` | Solid on while home upload in progress (`flashes=0`) |
+| `nestLedUploadOK` | `64FF00,2,200,200` | Flash on successful home upload |
+| `nestLedUploadFail` | `FF0000,3,200,200` | Flash on failed home upload |
 
 **Worker — `/worker.cfg`** (see `worker.cfg.example`)
 
@@ -268,17 +274,17 @@ Both devices use a simple `key=value` config file on their own SD card. Lines st
 | `ledPinG` | `23` | rgb4pin Green pin |
 | `ledPinB` | `24` | rgb4pin Blue pin |
 | `ledBoot` | `FFFFFF,3,50,50` | LED event: `colour(hex),flashes,onMs,offMs` |
-| `ledGPSAcquire` | `FAA307,1,800,800` | Slow amber pulse while acquiring GPS |
-| `ledGPSFound` | `00FFFF,2,100,100` | Cyan flash when GPS UART detected |
-| `ledGPSFix` | `00FFFF,2,100,100` | Cyan flash on first position fix |
-| `ledScanCycle` | `FFFF00,1,100,100` | Yellow flash at start of each scan cycle |
-| `ledConnecting` | `4488FF,1,200,200` | Blue blink while connecting to nest |
-| `ledSyncOK` | `00FF00,2,100,100` | Green flash on successful sync |
+| `ledGPSAcquire` | `FF3C00,0,400,400` | Amber toggle while acquiring GPS (`flashes=0`) |
+| `ledGPSFound` | `64FF00,4,400,300` | Lime flash when GPS fix first acquired |
+| `ledGPSFix` | `64FF00,2,150,100` | Lime flash when GPS has fix |
+| `ledScanCycle` | `FFDC00,1,100,0` | Yellow flash at start of each scan cycle |
+| `ledConnecting` | `FF6400,0,200,200` | Orange toggle while connecting to nest (`flashes=0`) |
+| `ledSyncOK` | `00FF00,2,150,100` | Green flash on successful sync |
 | `ledSyncFail` | `FF0000,3,80,80` | Red flash on sync failure |
-| `ledTooBig` | `FF6600,4,80,80` | Orange flash when file deferred (too large) |
-| `ledLowHeap` | `FF0000,1,400,400` | Red slow pulse on low heap warning |
-| `ledDronePulse` | `8800FF,1,200,200` | Purple pulse — drone mode heartbeat |
-| `ledHeartbeat` | `FF69B4,1,50,50` | Pink flash on ESP-NOW heartbeat sent |
+| `ledTooBig` | `FF6400,4,80,80` | Orange flash when file deferred (too large) |
+| `ledLowHeap` | `FF0000,1,400,0` | Red flash on low heap warning |
+| `ledDronePulse` | `0050FF,2,200,100` | Blue flash — drone connection pulse |
+| `ledHeartbeat` | `FF69B4,2,80,80` | Pink flash on ESP-NOW heartbeat sent |
 | `nestSsid` | `WASP-Nest` | Nest AP SSID to connect to for sync |
 | `nestPsk` | `waspswarm` | Nest AP password |
 | `nestIp` | `192.168.4.1` | Nest IP address |
