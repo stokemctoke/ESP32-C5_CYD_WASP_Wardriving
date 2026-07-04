@@ -461,6 +461,13 @@ void drawFileList() {
 
 // ── SETTINGS ─────────────────────────────────────────────────────────────────
 void drawSettings() {
+  char wigleSnap[sizeof(lastWigleStr)];
+  char wdgSnap[sizeof(lastWdgStr)];
+  taskENTER_CRITICAL(&gLock);
+  memcpy(wigleSnap, lastWigleStr, sizeof(wigleSnap));
+  memcpy(wdgSnap,   lastWdgStr,   sizeof(wdgSnap));
+  taskEXIT_CRITICAL(&gLock);
+
   drawScreenHeader("SETTINGS");
   tft.fillRect(0, HEADER_H, 240, 320 - HEADER_H, CLR_BG);
 
@@ -489,10 +496,10 @@ void drawSettings() {
   tft.drawFastHLine(6, y, 228, CLR_DIVIDER); y += 8;
 
   tft.setTextColor(CLR_GPS_OK, CLR_BG);
-  snprintf(buf, sizeof(buf), "WiGLE: %s", lastWigleStr);
+  snprintf(buf, sizeof(buf), "WiGLE: %s", wigleSnap);
   tft.drawString(buf, 6, y); y += lh;
   tft.setTextColor(CLR_STALE, CLR_BG);
-  snprintf(buf, sizeof(buf), "WDG:   %s", lastWdgStr);
+  snprintf(buf, sizeof(buf), "WDG:   %s", wdgSnap);
   tft.drawString(buf, 6, y); y += lh + 8;
 
   drawBtn(10, y, 220, 34, "UPLOAD NOW");
