@@ -228,6 +228,19 @@ static bool uploadFileToWdgwars(const String& path, const String& fileName) {
   return (code == 200);
 }
 
+static bool isWigleMetaLine(const String& line) {
+  return line.startsWith("WigleWifi-");
+}
+
+static void skipWigleCsvPreamble(File& src, File& out) {
+  String first = src.readStringUntil('\n');
+  if (isWigleMetaLine(first)) {
+    src.readStringUntil('\n');  // column header row
+  } else if (first.length() > 0) {
+    out.println(first);
+  }
+}
+
 static int buildMergedCsv(const String& outPath) {
   sdTake();
   if (SD.exists(outPath.c_str())) SD.remove(outPath.c_str());
@@ -262,8 +275,7 @@ static int buildMergedCsv(const String& outPath) {
         while ((n = src.read(buf, sizeof(buf))) > 0) out.write(buf, n);
         headerWritten = true;
       } else {
-        src.readStringUntil('\n');
-        src.readStringUntil('\n');
+        skipWigleCsvPreamble(src, out);
         size_t n;
         while ((n = src.read(buf, sizeof(buf))) > 0) out.write(buf, n);
       }
