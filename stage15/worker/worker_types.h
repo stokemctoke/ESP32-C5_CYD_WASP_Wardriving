@@ -26,6 +26,7 @@
 #define CYCLE_SLOTS           25
 #define MAX_WIFI_PER_SLOT     40
 #define MAX_BLE_PER_SLOT      20
+#define MAX_BLE_PER_CYCLE     64
 
 // ── Nest MAC (used by ESP-NOW) ────────────────────────────────────────────────
 static const uint8_t NEST_MAC[6] = {0xA4, 0xF0, 0x0F, 0x5D, 0x96, 0xD4};

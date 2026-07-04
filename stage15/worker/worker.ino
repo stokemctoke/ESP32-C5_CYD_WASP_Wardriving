@@ -128,10 +128,10 @@ void setup() {
 
   NimBLEDevice::init("");
   pBLEScan = NimBLEDevice::getScan();
-  pBLEScan->setScanCallbacks(new BLEScanCallbacks(), false);
+  pBLEScan->setScanCallbacks(&bleScanCb, false);
   pBLEScan->setActiveScan(true);
   pBLEScan->setDuplicateFilter(true);
-  pBLEScan->setMaxResults(0);
+  pBLEScan->setMaxResults(MAX_BLE_PER_CYCLE);
 
   gpsOk = detectGPS();
   if (gpsOk) ledGPSFound();  // amber burst: module confirmed; cyan ledGPSFix() fires in loop() on valid fix
