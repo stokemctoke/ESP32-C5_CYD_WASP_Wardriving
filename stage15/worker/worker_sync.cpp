@@ -349,14 +349,23 @@ void syncFiles() {
   }
 
   SPI.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
-  SD.begin(SD_CS, SPI);
+  sdOk = SD.begin(SD_CS, SPI);
 
   Serial.printf("[SYNC] Done — %d uploaded, %d failed\n", uploaded, failed);
 
   if (uploaded > 0 && failed == 0) ledSyncOK();
   else if (failed > 0) ledSyncFail();
 
-  if (sdOk) openLogFile();
+  if (sdOk) {
+    if (!openLogFile()) {
+      sdOk = false;
+      Serial.println("[SYNC] SD log reopen failed — logging disabled");
+      ledSyncFail();
+    }
+  } else {
+    Serial.println("[SYNC] SD re-init failed — logging disabled");
+    ledSyncFail();
+  }
 }
 
 void syncBuffer() {

@@ -161,9 +161,13 @@ void setup() {
                   (int)(CYCLE_SLOTS * sizeof(cycle_slot_t) / 1024));
   } else {
     Serial.println(" │  Mode  :  WORKER                    │");
+    if (sdOk && !openLogFile()) {
+      sdOk = false;
+      Serial.println("[SD] Log open failed — logging disabled");
+      ledSyncFail();
+    }
     Serial.printf(" │  SD    :  %s                         │\n", sdOk  ? "OK  " : "FAIL");
     Serial.printf(" │  GPS   :  %s                    │\n", gpsOk ? "detected" : "not found");
-    if (sdOk) openLogFile();
   }
   Serial.printf(" │  Sync  :  every %d cycles             │\n", syncEvery);
   Serial.printf(" │  LED   :  %-7s  bright %-3d          │\n",
