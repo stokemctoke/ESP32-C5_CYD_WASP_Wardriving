@@ -111,6 +111,7 @@ struct wasp_config_t {
   char apPsk[32];
   char wigleBasicToken[128];
   char wdgwarsApiKey[72];
+  uint16_t swarmId;        // 0 = accept all ESP-NOW senders
 };
 
 // ── ESP-NOW packet structs ────────────────────────────────────────────────────

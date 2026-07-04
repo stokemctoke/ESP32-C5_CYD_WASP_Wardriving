@@ -14,6 +14,9 @@ homePsk=YourHomeWiFiPassword
 apSsid=WASP-Nest
 apPsk=waspswarm
 
+# Swarm ID — djb2 hash of swarm name; 0 = accept all workers (default)
+#swarmId=0
+
 # WiGLE 'Encoded for use' token — wigle.net → Account → API Token
 wigleBasicToken=YourWiGLEEncodedToken
 
