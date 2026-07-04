@@ -302,6 +302,10 @@ Each worker can carry its own `worker.cfg` so units can be tuned independently w
 
 ```
 /
+├── ARCHIVE.md                     ← explains stage14_last_monolith/ (reference only — do not flash)
+├── stage14_last_monolith/         ← archived pre-modular monolith; no touch UI — see ARCHIVE.md
+│   ├── nest/                      ← single-file CYD firmware (Stage 13/14 era)
+│   └── worker/                    ← single-file C5 firmware (Stage 13 era)
 ├── stage15/                       ← active firmware (flash this)
 │   ├── nest/
 │   │   ├── nest.ino               ← CYD: setup(), loop(), FreeRTOS task spawn
