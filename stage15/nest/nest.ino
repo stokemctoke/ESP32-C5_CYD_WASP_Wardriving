@@ -186,6 +186,7 @@ void loop() {
   touchDiag();
 
   if (ledHeartbeatFlag) { ledHeartbeatFlag = false; nestLedFlashEvent(evNestHeartbeat); }
+  processEspNowLogs();
 
   if (now - lastUploadAttemptMs >= HOME_UPLOAD_INTERVAL_MS) {
     lastUploadAttemptMs = now;
