@@ -216,7 +216,7 @@ static bool uploadFileToWigle(const String& path, const String& fileName) {
   int code = streamMultipartPost("api.wigle.net", "/api/v2/file/upload",
                                   "Authorization", auth.c_str(), path, fileName);
   Serial.printf("[WIGLE] %s  HTTP %d\n", fileName.c_str(), code);
-  return (code == 200);
+  return (code == 200 || code == 201);
 }
 
 static bool uploadFileToWdgwars(const String& path, const String& fileName) {
