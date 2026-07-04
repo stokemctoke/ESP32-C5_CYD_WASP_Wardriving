@@ -14,8 +14,10 @@ std::vector<uint16_t> bleMfgrIds;
 std::vector<bool> bleMfgrFlags;
 
 NimBLEScan* pBLEScan = nullptr;
+BLEScanCallbacks bleScanCb;
 
 void BLEScanCallbacks::onDiscovered(const NimBLEAdvertisedDevice* d) {
+  if ((int)bleAddrs.size() >= MAX_BLE_PER_CYCLE) return;
   String   name    = d->getName().empty() ? "" : String(d->getName().c_str());
   uint16_t mfgrId  = 0;
   bool     hasMfgr = false;

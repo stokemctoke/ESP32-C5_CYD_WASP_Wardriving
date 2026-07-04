@@ -18,5 +18,7 @@ public:
   void onDiscovered(const NimBLEAdvertisedDevice* d) override;
 };
 
+extern BLEScanCallbacks bleScanCb;
+
 WiFiScanResult runWiFiScan();
 int runBLEScan();
