@@ -3,6 +3,7 @@
 #include "nest_led.h"
 #include "nest_espnow.h"
 #include "nest_registry.h"
+#include "nest_ca.h"
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <SD.h>
@@ -94,7 +95,8 @@ static int streamMultipartPost(const char* host, const char* urlPath,
                 host, urlPath, total, (int)pre.length(), sz, (int)post.length());
   Serial.printf("[UPLOAD] heap before TLS: %u\n", ESP.getFreeHeap());
 
-  WiFiClientSecure wc; wc.setInsecure();
+  WiFiClientSecure wc;
+  wc.setCACert(ISRG_ROOT_X1);
   wc.setTimeout(30);
 
   uint32_t tConnect = millis();
