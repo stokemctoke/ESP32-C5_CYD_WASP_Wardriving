@@ -469,7 +469,7 @@ void drawSettings() {
   tft.drawString(cfg.homeSsid[0] ? cfg.homeSsid : "not configured", 14, y); y += lh;
 
   uint16_t hCol = (homeStatus == 1) ? CLR_GPS_OK : (homeStatus == 2) ? CLR_STALE : CLR_OFFLINE;
-  const char* hStr = (homeStatus == 1) ? "Connected" : (homeStatus == 2) ? "Connecting..." : "Offline";
+  const char* hStr = (homeStatus == 1) ? "Connected" : (homeStatus == 2) ? "Failed" : "Offline";
   tft.setTextColor(hCol, CLR_BG);
   tft.drawString(hStr, 14, y); y += lh + 4;
 
