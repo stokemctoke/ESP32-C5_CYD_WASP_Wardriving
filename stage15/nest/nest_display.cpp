@@ -590,9 +590,14 @@ void handleTapFileList(int px, int py) {
     bool hitYes = (px >= mx + 6       && px <= mx + 92      && py >= my + 46 && py <= my + 72);
     bool hitNo  = (px >= mx + mw - 92  && px <= mx + mw - 6  && py >= my + 46 && py <= my + 72);
     if (hitYes && fileModalIdx >= 0 && fileModalIdx < fileEntryCount) {
-      String path = "/logs/" + String(uiDetailMac12) + "/" + String(fileEntries[fileModalIdx].name);
-      SD.remove(path.c_str());
-      Serial.printf("[UI] Deleted %s\n", path.c_str());
+      String fileName = String(fileEntries[fileModalIdx].name);
+      if (!isValidFilename(fileName)) {
+        Serial.printf("[UI] Rejected delete: bad filename '%s'\n", fileName.c_str());
+      } else {
+        String path = "/logs/" + String(uiDetailMac12) + "/" + fileName;
+        SD.remove(path.c_str());
+        Serial.printf("[UI] Deleted %s\n", path.c_str());
+      }
       fileModalShown = false; fileModalIdx = -1;
       uiInvalidateFileList(); uiInvalidateBrowser();
       refreshDisplay();

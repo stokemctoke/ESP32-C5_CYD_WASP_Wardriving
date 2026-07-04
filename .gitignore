@@ -1,5 +1,8 @@
-# Real config with credentials — never commit this
+# Real config with credentials — never commit these
 wasp.cfg
+worker.cfg
+**/wasp.cfg
+**/worker.cfg
 
 # Keeps me up to date on what I've done
 LastSession.md
@@ -7,3 +10,18 @@ LastSession.md
 # Claude Code local tool state
 .claude/
 
+# Arduino / ESP32 build artifacts
+build/
+*.bin
+*.elf
+*.hex
+*.map
+*.eep
+*.o
+*.d
+*.a
+
+# OS cruft
+.DS_Store
+Thumbs.db
+desktop.ini
