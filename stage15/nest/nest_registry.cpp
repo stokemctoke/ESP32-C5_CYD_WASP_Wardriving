@@ -15,7 +15,39 @@ int findOrAddWorker(const uint8_t* mac) {
   if (idx >= 0) return idx;
   for (int i = 0; i < MAX_WORKERS; i++)
     if (workers[i].lastSeenMs == 0) { memcpy(workers[i].mac, mac, 6); return i; }
-  return -1;
+
+  // All slots occupied — evict the oldest stale entry (timed out but not yet removed).
+  uint32_t now = millis();
+  int evictIdx = -1;
+  uint32_t oldestSeen = UINT32_MAX;
+  char evicted[18], newcomer[18];
+  for (int i = 0; i < MAX_WORKERS; i++) {
+    if (workers[i].lastSeenMs == 0) continue;
+    uint32_t age = now - workers[i].lastSeenMs;
+    if (age >= WORKER_TIMEOUT_MS && workers[i].lastSeenMs < oldestSeen) {
+      oldestSeen = workers[i].lastSeenMs;
+      evictIdx = i;
+    }
+  }
+  if (evictIdx < 0) {
+    snprintf(newcomer, sizeof(newcomer), "%02X:%02X:%02X:%02X:%02X:%02X",
+             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    Serial.printf("[NEST] WARNING: registry full — no stale slots, dropping worker %s\n",
+                  newcomer);
+    return -1;
+  }
+
+  const uint8_t* ev = workers[evictIdx].mac;
+  snprintf(evicted, sizeof(evicted), "%02X:%02X:%02X:%02X:%02X:%02X",
+           ev[0], ev[1], ev[2], ev[3], ev[4], ev[5]);
+  snprintf(newcomer, sizeof(newcomer), "%02X:%02X:%02X:%02X:%02X:%02X",
+           mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+  Serial.printf("[NEST] WARNING: registry full — evicted stale worker %s for %s\n",
+                evicted, newcomer);
+
+  memset(&workers[evictIdx], 0, sizeof(workers[evictIdx]));
+  memcpy(workers[evictIdx].mac, mac, 6);
+  return evictIdx;
 }
 
 int countActiveWorkers() {
