@@ -530,7 +530,8 @@ void drawCurrentScreen() {
 void refreshDisplay() {
   // 1Hz tick: only Home auto-redraws because its worker stats are live.
   // Detail screens are static and only repaint on navigation, which avoids
-  // the full-screen fillRect flicker.
+  // the full-screen fillRect flicker. After in-place mutations, call
+  // drawCurrentScreen() instead.
   if (uiCurrent() == SCR_HOME) drawHome();
 }
 
@@ -621,10 +622,10 @@ void handleTapFileList(int px, int py) {
       }
       fileModalShown = false; fileModalIdx = -1;
       uiInvalidateFileList(); uiInvalidateBrowser();
-      refreshDisplay();
+      drawCurrentScreen();
     } else if (hitNo) {
       fileModalShown = false; fileModalIdx = -1;
-      refreshDisplay();
+      drawCurrentScreen();
     }
     return;
   }
@@ -650,6 +651,6 @@ void handleTapSettings(int px, int py) {
     tft.setTextColor(CLR_BG, CLR_STALE);
     tft.drawString("Uploading...", 120, 195);
     requestHomeUpload();
-    refreshDisplay();
+    // Keep partial "Uploading..." overlay; full settings refresh is issue #91.
   }
 }
