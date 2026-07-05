@@ -48,6 +48,9 @@ ledType=ws2812           # ws2812  → addressable WS2812B/SK6812 on D0 (GPIO3) 
 #lowHeapThreshold=30000  # free heap warning level in bytes
 #verboseSerial=false     # true = print every AP/BLE device and GPS status each cycle
 
+# Drone mode (no SD): same keys stored in NVS. Provision over USB serial:
+#   nestMac=AA:BB:CC:DD:EE:FF   (one key=value per line while running)
+
 # ── LED event colours and timing — format: RRGGBB,flashes,onMs,offMs ──────────
 # Omit any line to keep the compiled-in default.
 # flashes=0 on ledGPSAcquire and ledConnecting means continuous toggle (loop-based).

@@ -1,6 +1,9 @@
 #include "worker_config.h"
 #include "worker_led.h"
 #include <SD.h>
+#include <Preferences.h>
+
+bool saveNvsConfigKey(const char* key, const String& val);
 
 // ── Nest connection ───────────────────────────────────────────────────────────
 char nestSsid[33]    = "WASP-Nest";
@@ -62,64 +65,116 @@ bool parseNestMac(const String& val, uint8_t mac[6]) {
   return true;
 }
 
+static void applyConfigKey(const String& key, const String& val) {
+  if      (key == "ledEnabled")    ledEnabled    = (val == "true" || val == "1");
+  else if (key == "ledBrightness") ledBrightness = (uint8_t)constrain(val.toInt(), 0, 255);
+  else if (key == "ledType")       ledType       = (val == "rgb4pin") ? LED_RGB4PIN : LED_WS2812;
+  else if (key == "ledBoot")       parseLedEvent(val, evBoot);
+  else if (key == "ledGPSAcquire") parseLedEvent(val, evGPSAcquire);
+  else if (key == "ledGPSFound")   parseLedEvent(val, evGPSFound);
+  else if (key == "ledGPSFix")     parseLedEvent(val, evGPSFix);
+  else if (key == "ledScanCycle")  parseLedEvent(val, evScanCycle);
+  else if (key == "ledConnecting") parseLedEvent(val, evConnecting);
+  else if (key == "ledSyncOK")     parseLedEvent(val, evSyncOK);
+  else if (key == "ledSyncFail")   parseLedEvent(val, evSyncFail);
+  else if (key == "ledTooBig")     parseLedEvent(val, evTooBig);
+  else if (key == "ledLowHeap")    parseLedEvent(val, evLowHeap);
+  else if (key == "ledDronePulse") parseLedEvent(val, evDronePulse);
+  else if (key == "ledHeartbeat")  parseLedEvent(val, evHeartbeat);
+  else if (key == "ledPin")        ledPin        = val.toInt();
+  else if (key == "ledPinG")       ledPinG       = val.toInt();
+  else if (key == "ledPinB")       ledPinB       = val.toInt();
+  else if (key == "gpsBaud")       gpsBaud       = val.toInt();
+  else if (key == "gpsRxPin")      gpsRxPin      = val.toInt();
+  else if (key == "gpsTxPin")      gpsTxPin      = val.toInt();
+  else if (key == "nestSsid")      val.toCharArray(nestSsid, sizeof(nestSsid));
+  else if (key == "nestPsk")       val.toCharArray(nestPsk,  sizeof(nestPsk));
+  else if (key == "nestIp")        val.toCharArray(nestIp, sizeof(nestIp));
+  else if (key == "uploadToken")   val.toCharArray(uploadToken, sizeof(uploadToken));
+  else if (key == "nestMac")       parseNestMac(val, nestMac);
+  else if (key == "syncEvery")           syncEvery           = max(1, (int)val.toInt());
+  else if (key == "heartbeatIntervalMs") heartbeatIntervalMs = max(1000, (int)val.toInt());
+  else if (key == "wifiChanMs")          wifiChanMs          = constrain(val.toInt(), 20, 500);
+  else if (key == "bleScanMs")           bleScanMs           = constrain(val.toInt(), 500, 10000);
+  else if (key == "cycleDelayMs")        cycleDelayMs        = max(0, (int)val.toInt());
+  else if (key == "maxLogBytes")      maxLogBytes      = constrain(val.toInt(), 1024, 65536);
+  else if (key == "lowHeapThreshold") lowHeapThreshold = max(8192, (int)val.toInt());
+  else if (key == "verboseSerial")    verboseSerial    = (val == "true" || val == "1");
+}
+
+bool setWorkerConfigKey(const String& key, const String& val) {
+  applyConfigKey(key, val);
+  return saveNvsConfigKey(key.c_str(), val);
+}
+
+void loadNvsConfig() {
+  Preferences prefs;
+  if (!prefs.begin("wasp-worker", true)) {
+    Serial.println("[CFG] NVS unavailable — using compiled defaults");
+    return;
+  }
+
+  int loaded = 0;
+  if (prefs.isKey("nestMac")) {
+    String mac = prefs.getString("nestMac");
+    if (parseNestMac(mac, nestMac)) loaded++;
+  }
+  if (prefs.isKey("nestSsid")) { prefs.getString("nestSsid", nestSsid, sizeof(nestSsid)); loaded++; }
+  if (prefs.isKey("nestPsk"))  { prefs.getString("nestPsk",  nestPsk,  sizeof(nestPsk));  loaded++; }
+  if (prefs.isKey("nestIp"))   { prefs.getString("nestIp",   nestIp,   sizeof(nestIp));   loaded++; }
+  if (prefs.isKey("uploadToken")) { prefs.getString("uploadToken", uploadToken, sizeof(uploadToken)); loaded++; }
+  if (prefs.isKey("syncEvery"))           { syncEvery           = max(1, prefs.getInt("syncEvery", syncEvery)); loaded++; }
+  if (prefs.isKey("heartbeatIntervalMs")) { heartbeatIntervalMs = max(1000, prefs.getInt("heartbeatIntervalMs", heartbeatIntervalMs)); loaded++; }
+  if (prefs.isKey("verboseSerial"))       { verboseSerial = prefs.getBool("verboseSerial", verboseSerial); loaded++; }
+
+  prefs.end();
+  if (loaded > 0) {
+    Serial.printf("[CFG] Loaded %d key(s) from NVS (drone / no SD)\n", loaded);
+  } else {
+    Serial.println("[CFG] NVS empty — using compiled defaults");
+  }
+}
+
+bool saveNvsConfigKey(const char* key, const String& val) {
+  Preferences prefs;
+  if (!prefs.begin("wasp-worker", false)) return false;
+  bool ok = false;
+  if (strcmp(key, "nestMac") == 0 || strcmp(key, "nestSsid") == 0 ||
+      strcmp(key, "nestPsk") == 0 || strcmp(key, "nestIp") == 0 ||
+      strcmp(key, "uploadToken") == 0)
+    ok = prefs.putString(key, val) > 0;
+  else if (strcmp(key, "syncEvery") == 0 || strcmp(key, "heartbeatIntervalMs") == 0)
+    ok = prefs.putInt(key, val.toInt()) >= 0;
+  else if (strcmp(key, "verboseSerial") == 0)
+    ok = prefs.putBool(key, val == "true" || val == "1") >= 0;
+  prefs.end();
+  return ok;
+}
+
 void loadWorkerConfig() {
   memcpy(nestMac, NEST_MAC_DEFAULT, 6);
-  if (!SD.exists("/reset.cfg")) {
-    File cfg = SD.open("/worker.cfg");
-    if (!cfg) return;
-    while (cfg.available()) {
-      String line = cfg.readStringUntil('\n');
-      line.trim();
-      if (line.startsWith("#") || line.isEmpty()) continue;
-      int eq = line.indexOf('=');
-      if (eq < 0) continue;
-      String key = line.substring(0, eq); key.trim();
-      String val = line.substring(eq + 1);
-      int comment = val.indexOf('#');
-      if (comment >= 0) val = val.substring(0, comment);
-      val.trim();
-
-      // LED
-      if      (key == "ledEnabled")    ledEnabled    = (val == "true" || val == "1");
-      else if (key == "ledBrightness") ledBrightness = (uint8_t)constrain(val.toInt(), 0, 255);
-      else if (key == "ledType")       ledType       = (val == "rgb4pin") ? LED_RGB4PIN : LED_WS2812;
-      else if (key == "ledBoot")       parseLedEvent(val, evBoot);
-      else if (key == "ledGPSAcquire") parseLedEvent(val, evGPSAcquire);
-      else if (key == "ledGPSFound")   parseLedEvent(val, evGPSFound);
-      else if (key == "ledGPSFix")     parseLedEvent(val, evGPSFix);
-      else if (key == "ledScanCycle")  parseLedEvent(val, evScanCycle);
-      else if (key == "ledConnecting") parseLedEvent(val, evConnecting);
-      else if (key == "ledSyncOK")     parseLedEvent(val, evSyncOK);
-      else if (key == "ledSyncFail")   parseLedEvent(val, evSyncFail);
-      else if (key == "ledTooBig")     parseLedEvent(val, evTooBig);
-      else if (key == "ledLowHeap")    parseLedEvent(val, evLowHeap);
-      else if (key == "ledDronePulse") parseLedEvent(val, evDronePulse);
-      else if (key == "ledHeartbeat")  parseLedEvent(val, evHeartbeat);
-      // LED pins
-      else if (key == "ledPin")        ledPin        = val.toInt();
-      else if (key == "ledPinG")       ledPinG       = val.toInt();
-      else if (key == "ledPinB")       ledPinB       = val.toInt();
-      // GPS
-      else if (key == "gpsBaud")       gpsBaud       = val.toInt();
-      else if (key == "gpsRxPin")      gpsRxPin      = val.toInt();
-      else if (key == "gpsTxPin")      gpsTxPin      = val.toInt();
-      // Nest connection
-      else if (key == "nestSsid")      val.toCharArray(nestSsid, sizeof(nestSsid));
-      else if (key == "nestPsk")       val.toCharArray(nestPsk,  sizeof(nestPsk));
-      else if (key == "nestIp")        val.toCharArray(nestIp,        sizeof(nestIp));
-      else if (key == "uploadToken")   val.toCharArray(uploadToken,   sizeof(uploadToken));
-      else if (key == "nestMac")       parseNestMac(val, nestMac);
-      // Sync & timing
-      else if (key == "syncEvery")           syncEvery           = max(1, (int)val.toInt());
-      else if (key == "heartbeatIntervalMs") heartbeatIntervalMs = max(1000, (int)val.toInt());
-      else if (key == "wifiChanMs")          wifiChanMs          = constrain(val.toInt(), 20, 500);
-      else if (key == "bleScanMs")           bleScanMs           = constrain(val.toInt(), 500, 10000);
-      else if (key == "cycleDelayMs")        cycleDelayMs        = max(0, (int)val.toInt());
-      // Log & memory
-      else if (key == "maxLogBytes")      maxLogBytes      = constrain(val.toInt(), 1024, 65536);
-      else if (key == "lowHeapThreshold") lowHeapThreshold = max(8192, (int)val.toInt());
-      else if (key == "verboseSerial")    verboseSerial    = (val == "true" || val == "1");
-    }
-    cfg.close();
+  if (SD.exists("/reset.cfg")) {
+    Serial.println("[CFG] /reset.cfg found — using compiled defaults");
+    return;
   }
+  File cfg = SD.open("/worker.cfg");
+  if (!cfg) {
+    loadNvsConfig();
+    return;
+  }
+  while (cfg.available()) {
+    String line = cfg.readStringUntil('\n');
+    line.trim();
+    if (line.startsWith("#") || line.isEmpty()) continue;
+    int eq = line.indexOf('=');
+    if (eq < 0) continue;
+    String key = line.substring(0, eq); key.trim();
+    String val = line.substring(eq + 1);
+    int comment = val.indexOf('#');
+    if (comment >= 0) val = val.substring(0, comment);
+    val.trim();
+    applyConfigKey(key, val);
+  }
+  cfg.close();
+  Serial.println("[CFG] Loaded from /worker.cfg");
 }

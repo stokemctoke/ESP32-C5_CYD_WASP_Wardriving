@@ -182,11 +182,28 @@ void setup() {
 
   feedGPS(500);
   Serial.println(" Setup complete\n");
+  if (droneMode) {
+    Serial.println("[CFG] Drone: set nestMac etc. over serial as key=value (saved to NVS)");
+  }
 }
 
 // ── Loop ──────────────────────────────────────────────────────────────────────
 
 void loop() {
+  if (droneMode && Serial.available()) {
+    String line = Serial.readStringUntil('\n');
+    line.trim();
+    if (line.indexOf('=') > 0) {
+      int eq = line.indexOf('=');
+      String key = line.substring(0, eq); key.trim();
+      String val = line.substring(eq + 1); val.trim();
+      if (setWorkerConfigKey(key, val))
+        Serial.printf("[CFG] NVS saved: %s\n", key.c_str());
+      else
+        Serial.printf("[CFG] NVS rejected: %s\n", key.c_str());
+    }
+  }
+
   Serial.printf("\n======================================== [cycle %u]\n", cycleCount + 1);
   maybeHeartbeat();
 
