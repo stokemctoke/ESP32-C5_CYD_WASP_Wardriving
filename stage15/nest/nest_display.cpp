@@ -34,6 +34,29 @@ static int detailViewFilesBtnY = 0;
 static const int DETAIL_BTN_W  = 220;
 static const int DETAIL_BTN_H  = 30;
 
+// Home incremental redraw cache
+#define FOOTER_ROTATE_MS 4000
+
+struct HomeRowCache {
+  uint8_t  mac[6];
+  int8_t   rssi;
+  uint8_t  gpsFix;
+  uint16_t wifiTotal;
+  uint8_t  wifi2g, wifi5g;
+  uint16_t bleCount;
+  uint32_t cycleCount;
+  uint8_t  nodeType;
+  uint32_t lastSeenMs;
+  bool     valid;
+};
+
+static HomeRowCache homeRowCache[MAX_ROWS];
+static bool         homeStaticDrawn = false;
+static int          homeLastActive  = -1;
+static uint8_t      homeLastStatus  = 255;
+static uint32_t     homeFooterNextMs = 0;
+static uint8_t      homeFooterSlot   = 0;
+
 void uiInvalidateBrowser()  { browserLoaded  = false; }
 void uiInvalidateFileList() { fileListLoaded = false; }
 
@@ -98,7 +121,7 @@ static void drawWorkerRow(int row, const worker_entry_t& w) {
   int y = HEADER_H + STATUS_H + row * ROW_H;
   uint32_t age   = millis() - w.lastSeenMs;
   bool active    = age < WORKER_TIMEOUT_MS;
-  bool stale     = age >= 10000 && active;
+  bool stale     = age >= WORKER_STALE_MS && active;
   bool isDrone   = (w.nodeType == 1);
   uint16_t base  = isDrone ? CLR_DRONE : CLR_ACTIVE;
   uint16_t nameC = active ? (stale ? CLR_STALE : base) : CLR_OFFLINE;
@@ -145,7 +168,110 @@ static void drawWorkerRow(int row, const worker_entry_t& w) {
   tft.drawString(scanLine, w.gpsFix ? 64 : 94, y + 38);
 }
 
-void drawHome() {
+static void drawHomeStatic() {
+  if (homeStaticDrawn) return;
+  drawHeader();
+  tft.fillRect(170, 0, 70, HEADER_H, CLR_HDR_BG);
+  drawBtn(174, 4, 30, 20, "F");
+  drawBtn(206, 4, 30, 20, "S");
+  homeStaticDrawn = true;
+}
+
+static void drawHomeStatusBar(int active) {
+  tft.fillRect(0, HEADER_H, 240, STATUS_H, CLR_BG);
+  tft.setTextFont(2);
+  tft.setTextDatum(ML_DATUM);
+  tft.setTextColor(CLR_LABEL, CLR_BG);
+  char buf[32];
+  if (active > MAX_ROWS)
+    snprintf(buf, sizeof(buf), "Workers: %d +%d  ch:%d", MAX_ROWS, active - MAX_ROWS, ESPNOW_CHANNEL);
+  else
+    snprintf(buf, sizeof(buf), "Workers: %d  ch:%d", active, ESPNOW_CHANNEL);
+  tft.drawString(buf, 6, HEADER_H + STATUS_H / 2);
+  if (cfg.homeSsid[0]) {
+    uint16_t hCol = (homeStatus == 1) ? CLR_GPS_OK : (homeStatus == 2) ? CLR_ERROR : CLR_OFFLINE;
+    tft.setTextDatum(MR_DATUM);
+    tft.setTextColor(hCol, CLR_BG);
+    tft.drawString("H", 234, HEADER_H + STATUS_H / 2);
+  }
+}
+
+static void drawHomeFooter(const char* syncSnap, const char* wigleSnap, const char* wdgSnap) {
+  int fy = 320 - FOOTER_H;
+  tft.fillRect(0, fy, 240, FOOTER_H, CLR_FTR_BG);
+  tft.setTextFont(1);
+  tft.setTextDatum(ML_DATUM);
+  char fbuf[52];
+  if (homeFooterSlot == 0) {
+    tft.setTextColor(CLR_LABEL, CLR_FTR_BG);
+    snprintf(fbuf, sizeof(fbuf), "Sync: %s", syncSnap);
+  } else if (homeFooterSlot == 1) {
+    tft.setTextColor(CLR_GPS_OK, CLR_FTR_BG);
+    snprintf(fbuf, sizeof(fbuf), "WiGLE: %s", wigleSnap);
+  } else {
+    tft.setTextColor(CLR_STALE, CLR_FTR_BG);
+    snprintf(fbuf, sizeof(fbuf), "WDG: %s", wdgSnap);
+  }
+  tft.drawString(fbuf, 6, fy + FOOTER_H / 2);
+}
+
+static bool homeRowChanged(const worker_entry_t& w, const HomeRowCache& c, uint32_t now) {
+  if (!c.valid) return true;
+  if (memcmp(c.mac, w.mac, 6) != 0) return true;
+  if (c.rssi != w.rssi || c.gpsFix != w.gpsFix) return true;
+  if (c.wifiTotal != w.wifiTotal || c.wifi2g != w.wifi2g || c.wifi5g != w.wifi5g) return true;
+  if (c.bleCount != w.bleCount || c.cycleCount != w.cycleCount) return true;
+  if (c.nodeType != w.nodeType) return true;
+  bool wasStale = c.lastSeenMs > 0 && (now - c.lastSeenMs) >= WORKER_STALE_MS &&
+                  (now - c.lastSeenMs) < WORKER_TIMEOUT_MS;
+  bool isStale  = (now - w.lastSeenMs) >= WORKER_STALE_MS &&
+                  (now - w.lastSeenMs) < WORKER_TIMEOUT_MS;
+  if (wasStale != isStale) return true;
+  return false;
+}
+
+static void cacheHomeRow(int row, const worker_entry_t& w) {
+  HomeRowCache& c = homeRowCache[row];
+  memcpy(c.mac, w.mac, 6);
+  c.rssi = w.rssi;
+  c.gpsFix = w.gpsFix;
+  c.wifiTotal = w.wifiTotal;
+  c.wifi2g = w.wifi2g;
+  c.wifi5g = w.wifi5g;
+  c.bleCount = w.bleCount;
+  c.cycleCount = w.cycleCount;
+  c.nodeType = w.nodeType;
+  c.lastSeenMs = w.lastSeenMs;
+  c.valid = true;
+}
+
+static void clearHomeRow(int row) {
+  if (!homeRowCache[row].valid) return;
+  int y = HEADER_H + STATUS_H + row * ROW_H;
+  tft.fillRect(0, y, 240, ROW_H, CLR_BG);
+  homeRowCache[row].valid = false;
+}
+
+static void refreshHomeRows(const worker_entry_t snap[MAX_WORKERS], uint32_t now) {
+  worker_entry_t visible[MAX_ROWS];
+  int visCount = 0;
+  for (int i = 0; i < MAX_WORKERS && visCount < MAX_ROWS; i++) {
+    if (snap[i].lastSeenMs > 0 && (now - snap[i].lastSeenMs) < WORKER_TIMEOUT_MS)
+      visible[visCount++] = snap[i];
+  }
+  for (int row = 0; row < MAX_ROWS; row++) {
+    if (row < visCount) {
+      if (homeRowChanged(visible[row], homeRowCache[row], now)) {
+        drawWorkerRow(row, visible[row]);
+        cacheHomeRow(row, visible[row]);
+      }
+    } else {
+      clearHomeRow(row);
+    }
+  }
+}
+
+static void refreshHome(bool fullPaint) {
   worker_entry_t snap[MAX_WORKERS];
   char syncSnap[sizeof(lastSyncStr)];
   char wigleSnap[sizeof(lastWigleStr)];
@@ -162,61 +288,36 @@ void drawHome() {
   for (int i = 0; i < MAX_WORKERS; i++)
     if (snap[i].lastSeenMs > 0 && (now - snap[i].lastSeenMs) < WORKER_TIMEOUT_MS) active++;
 
-  // Header — overpaint right side with FILES and SETTINGS buttons
-  drawHeader();
-  tft.fillRect(170, 0, 70, HEADER_H, CLR_HDR_BG);
-  drawBtn(174, 4, 30, 20, "F");
-  drawBtn(206, 4, 30, 20, "S");
-
-  // Status bar
-  tft.fillRect(0, HEADER_H, 240, STATUS_H, CLR_BG);
-  tft.setTextFont(2);
-  tft.setTextDatum(ML_DATUM);
-  tft.setTextColor(CLR_LABEL, CLR_BG);
-  char buf[32];
-  if (active > MAX_ROWS)
-    snprintf(buf, sizeof(buf), "Workers: %d +%d  ch:%d", MAX_ROWS, active - MAX_ROWS, ESPNOW_CHANNEL);
-  else
-    snprintf(buf, sizeof(buf), "Workers: %d  ch:%d", active, ESPNOW_CHANNEL);
-  tft.drawString(buf, 6, HEADER_H + STATUS_H / 2);
-
-  if (cfg.homeSsid[0]) {
-    uint16_t hCol = (homeStatus == 1) ? CLR_GPS_OK : (homeStatus == 2) ? CLR_ERROR : CLR_OFFLINE;
-    tft.setTextDatum(MR_DATUM);
-    tft.setTextColor(hCol, CLR_BG);
-    tft.drawString("H", 234, HEADER_H + STATUS_H / 2);
+  if (fullPaint) {
+    homeStaticDrawn = false;
+    memset(homeRowCache, 0, sizeof(homeRowCache));
+    homeLastActive = -1;
+    homeLastStatus = 255;
   }
 
-  // Worker rows
-  int row = 0;
-  for (int i = 0; i < MAX_WORKERS && row < MAX_ROWS; i++) {
-    if (snap[i].lastSeenMs > 0 && (now - snap[i].lastSeenMs) < WORKER_TIMEOUT_MS)
-      drawWorkerRow(row++, snap[i]);
-  }
-  for (; row < MAX_ROWS; row++) {
-    int y = HEADER_H + STATUS_H + row * ROW_H;
-    tft.fillRect(0, y, 240, ROW_H, CLR_BG);
+  drawHomeStatic();
+  if (fullPaint || active != homeLastActive || homeStatus != homeLastStatus) {
+    drawHomeStatusBar(active);
+    homeLastActive = active;
+    homeLastStatus = homeStatus;
   }
 
-  // Footer (rotates: Sync → WiGLE → WDG)
-  int fy = 320 - FOOTER_H;
-  tft.fillRect(0, fy, 240, FOOTER_H, CLR_FTR_BG);
-  tft.setTextFont(1);
-  tft.setTextDatum(ML_DATUM);
-  char fbuf[52];
-  static uint8_t footerTick = 0;
-  footerTick = (footerTick + 1) % 4;
-  if (footerTick < 2) {
-    tft.setTextColor(CLR_LABEL, CLR_FTR_BG);
-    snprintf(fbuf, sizeof(fbuf), "Sync: %s", syncSnap);
-  } else if (footerTick == 2) {
-    tft.setTextColor(CLR_GPS_OK, CLR_FTR_BG);
-    snprintf(fbuf, sizeof(fbuf), "WiGLE: %s", wigleSnap);
-  } else {
-    tft.setTextColor(CLR_STALE, CLR_FTR_BG);
-    snprintf(fbuf, sizeof(fbuf), "WDG: %s", wdgSnap);
+  refreshHomeRows(snap, now);
+
+  uint32_t t = millis();
+  if (fullPaint || t >= homeFooterNextMs) {
+    if (t >= homeFooterNextMs) {
+      homeFooterSlot = (homeFooterSlot + 1) % 3;
+      homeFooterNextMs = t + FOOTER_ROTATE_MS;
+    } else if (fullPaint) {
+      homeFooterNextMs = t + FOOTER_ROTATE_MS;
+    }
+    drawHomeFooter(syncSnap, wigleSnap, wdgSnap);
   }
-  tft.drawString(fbuf, 6, fy + FOOTER_H / 2);
+}
+
+void drawHome() {
+  refreshHome(true);
 }
 
 // ── WORKER DETAIL ─────────────────────────────────────────────────────────────
@@ -558,7 +659,7 @@ void refreshDisplay() {
   bool uploading = isHomeUploadRunning();
 
   if (uiCurrent() == SCR_HOME) {
-    drawHome();
+    refreshHome(false);
   } else if (uiCurrent() == SCR_SETTINGS && prevUploadRunning && !uploading) {
     drawSettings();
   }
