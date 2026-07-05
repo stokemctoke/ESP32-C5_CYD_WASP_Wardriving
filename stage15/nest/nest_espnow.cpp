@@ -34,8 +34,13 @@ void onDataRecv(const esp_now_recv_info_t* info, const uint8_t* data, int len) {
   if (!info || !data || len < 1) return;
   int rssi = info->rx_ctrl ? info->rx_ctrl->rssi : 0;
 
-  if (data[0] == WASP_PKT_HEARTBEAT && len >= (int)sizeof(heartbeat_t)) {
+  if (data[0] == WASP_PKT_HEARTBEAT) {
+    if (len != (int)sizeof(heartbeat_t)) return;
     const heartbeat_t* pkt = (const heartbeat_t*)data;
+    if (!waspVerify(pkt, sizeof(heartbeat_t))) {
+      Serial.println("[NEST] Ignored heartbeat: CRC mismatch");
+      return;
+    }
     maybeWarnFirmware(pkt->firmwareVer, pkt->workerMac);
 
     ledHeartbeatFlag = true;
@@ -61,9 +66,14 @@ void onDataRecv(const esp_now_recv_info_t* info, const uint8_t* data, int len) {
     return;
   }
 
-  if (data[0] != WASP_PKT_SUMMARY || len < (int)sizeof(scan_summary_t)) return;
+  if (data[0] != WASP_PKT_SUMMARY) return;
+  if (len != (int)sizeof(scan_summary_t)) return;
 
   const scan_summary_t* pkt = (const scan_summary_t*)data;
+  if (!waspVerify(pkt, sizeof(scan_summary_t))) {
+    Serial.println("[NEST] Ignored summary: CRC mismatch");
+    return;
+  }
   maybeWarnFirmware(pkt->firmwareVer, pkt->workerMac);
 
   taskENTER_CRITICAL(&gLock);
