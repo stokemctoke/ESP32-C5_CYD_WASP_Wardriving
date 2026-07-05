@@ -197,6 +197,7 @@ void handleRawUpload() {
     client.stop();
     return;
   }
+  sdGive();
 
   client.println("READY");
 
@@ -208,7 +209,9 @@ void handleRawUpload() {
   while (remaining > 0 && client.connected() && millis() < deadline) {
     int n = client.read(buf, min(remaining, (int)sizeof(buf)));
     if (n > 0) {
+      sdTake();
       size_t wrote = f.write(buf, n);
+      sdGive();
       written += wrote;
       if ((int)wrote < n) {
         Serial.printf("[NEST] SD write short %u/%d — aborting\n", (unsigned)wrote, n);
@@ -221,12 +224,15 @@ void handleRawUpload() {
     }
     server.handleClient();
   }
+  sdTake();
   f.close();
+  sdGive();
 
   if (sdFail) {
+    sdTake();
     SD.remove(path.c_str());
-    if (isChunked) clearChunkSeq();
     sdGive();
+    if (isChunked) clearChunkSeq();
     client.println("ERR sd write failed");
     client.stop();
     return;
@@ -235,14 +241,14 @@ void handleRawUpload() {
   Serial.printf("[NEST] recv %u/%d B for %s\n", (unsigned)written, fileSize, fileName.c_str());
 
   if ((int)written < fileSize) {
+    sdTake();
     SD.remove(path.c_str());
-    if (isChunked) clearChunkSeq();
     sdGive();
+    if (isChunked) clearChunkSeq();
     client.println("ERR transfer incomplete");
     client.stop();
     return;
   }
-  sdGive();
 
   if (isChunked) {
     sChunkSeq.expectedChunk++;
