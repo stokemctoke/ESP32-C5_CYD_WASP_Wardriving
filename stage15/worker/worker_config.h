@@ -38,5 +38,8 @@ extern int ledPinB;
 
 // ── Functions ────────────────────────────────────────────────────────────────
 void loadWorkerConfig();
+void loadNvsConfig();
+bool saveNvsConfigKey(const char* key, const String& val);
+bool setWorkerConfigKey(const String& key, const String& val);
 bool parseLedEvent(const String& val, LedEvent& ev);
 bool parseNestMac(const String& val, uint8_t mac[6]);
