@@ -12,6 +12,7 @@ LastSession.md
 
 # Arduino / ESP32 build artifacts
 build/
+**/build/
 *.bin
 *.elf
 *.hex

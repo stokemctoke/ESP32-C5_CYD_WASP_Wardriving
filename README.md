@@ -352,35 +352,45 @@ To change home WiFi credentials, API keys, or LED patterns, edit `/wasp.cfg` on 
 
 ```
 /
-├── ARCHIVE.md                     ← explains stage14_last_monolith/ (reference only — do not flash)
-├── stage14_last_monolith/         ← archived pre-modular monolith; no touch UI — see ARCHIVE.md
-│   ├── nest/                      ← single-file CYD firmware (Stage 13/14 era)
-│   └── worker/                    ← single-file C5 firmware (Stage 13 era)
-├── stage15/                       ← active firmware (flash this)
+├── README.md                      ← you are here
+├── ARCHIVE.md                     ← stage14_last_monolith/ reference (do not flash)
+├── HARDWARE_JC2432W328C.md        ← CYD board pinout and component notes
+├── LICENSE                        ← MIT
+├── SECURITY.md                    ← disclosure policy + default credential warning
+├── wasp.cfg.example               ← Nest SD config template
+├── worker.cfg.example             ← Worker SD config template
+├── ci/                            ← TFT_eSPI pin setup for CI builds
+├── .github/workflows/ci.yml       ← compile verification (Nest + Worker)
+├── stage14_last_monolith/         ← archived pre-modular monolith; no touch UI
 │   ├── nest/
-│   │   ├── nest.ino               ← CYD: setup(), loop(), FreeRTOS task spawn
-│   │   ├── nest_types.h           ← shared structs, constants, pin defines
-│   │   ├── nest_config.h/cpp      ← loadConfig(), wasp.cfg parsing
-│   │   ├── nest_led.h/cpp         ← onboard RGB LED abstraction
-│   │   ├── nest_registry.h/cpp    ← worker registry, ESP-NOW state
-│   │   ├── nest_espnow.h/cpp      ← ESP-NOW receive callback
-│   │   ├── nest_upload.h/cpp      ← TCP raw + HTTP upload handlers
-│   │   ├── nest_home.h/cpp        ← home WiFi connect + WiGLE/WDGWars upload
-│   │   ├── nest_display.h/cpp     ← TFT display rendering
-│   │   ├── nest_touch.h/cpp       ← CST820 capacitive touch driver (I²C)
-│   │   └── nest_ui.h/cpp          ← screen stack, fade transitions, touch dispatch
 │   └── worker/
-│       ├── worker.ino             ← setup(), loop(), mode detection
-│       ├── worker_types.h         ← shared structs, constants, pin defines
-│       ├── worker_config.h/cpp    ← loadWorkerConfig(), worker.cfg parsing
-│       ├── worker_led.h/cpp       ← WS2812 + rgb4pin LED abstraction
-│       ├── worker_gps.h/cpp       ← GPS detect, clock sync, timestamps
-│       ├── worker_storage.h/cpp   ← SD log open/rotate/flush, CSV writers
-│       ├── worker_drone.h/cpp     ← RAM circular buffer, drone CSV builder
-│       ├── worker_scan.h/cpp      ← WiFi + BLE scanning
-│       ├── worker_espnow.h/cpp    ← ESP-NOW init, heartbeat, summary send
-│       └── worker_sync.h/cpp      ← connectToNest, syncFiles, uploadChunked
+└── stage15/                       ← active firmware (flash this)
+    ├── nest/
+    │   ├── nest.ino               ← CYD: setup(), loop(), FreeRTOS task spawn
+    │   ├── nest_types.h           ← shared structs, constants, pin defines
+    │   ├── nest_config.h/cpp      ← loadConfig(), wasp.cfg parsing
+    │   ├── nest_led.h/cpp         ← onboard RGB LED abstraction
+    │   ├── nest_registry.h/cpp    ← worker registry, ESP-NOW state
+    │   ├── nest_espnow.h/cpp      ← ESP-NOW receive callback
+    │   ├── nest_upload.h/cpp      ← TCP raw + HTTP upload handlers
+    │   ├── nest_home.h/cpp        ← home WiFi connect + WiGLE/WDGWars upload
+    │   ├── nest_display.h/cpp     ← TFT display rendering
+    │   ├── nest_touch.h/cpp       ← CST820 capacitive touch driver (I²C)
+    │   └── nest_ui.h/cpp          ← screen stack, fade transitions, touch dispatch
+    └── worker/
+        ├── worker.ino             ← setup(), loop(), mode detection
+        ├── worker_types.h         ← shared structs, constants, pin defines
+        ├── worker_config.h/cpp    ← loadWorkerConfig(), worker.cfg parsing
+        ├── worker_led.h/cpp       ← WS2812 + rgb4pin LED abstraction
+        ├── worker_gps.h/cpp       ← GPS detect, clock sync, timestamps
+        ├── worker_storage.h/cpp   ← SD log open/rotate/flush, CSV writers
+        ├── worker_drone.h/cpp     ← RAM circular buffer, drone CSV builder
+        ├── worker_scan.h/cpp      ← WiFi + BLE scanning
+        ├── worker_espnow.h/cpp    ← ESP-NOW init, heartbeat, summary send
+        └── worker_sync.h/cpp      ← connectToNest, syncFiles, uploadChunked
 ```
+
+Active development happens on **`master`**. Flash from `stage15/` only.
 
 ---
 
