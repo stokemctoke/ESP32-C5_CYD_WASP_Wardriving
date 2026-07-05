@@ -1,6 +1,5 @@
 #include "worker_config.h"
 #include "worker_led.h"
-#include "../nest/nest_types.h"
 #include <SD.h>
 
 // ── Nest connection ───────────────────────────────────────────────────────────

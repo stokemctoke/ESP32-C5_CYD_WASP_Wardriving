@@ -10,6 +10,7 @@
 
 // ── Nest AP ───────────────────────────────────────────────────────────────────
 #define NEST_UPLOAD_PORT      8080
+#define WASP_DEFAULT_UPLOAD_TOKEN "waspswarm"
 
 // ── SD card pins ──────────────────────────────────────────────────────────────
 #define SD_CS    25

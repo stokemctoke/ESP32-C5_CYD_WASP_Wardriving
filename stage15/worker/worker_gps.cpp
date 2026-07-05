@@ -1,6 +1,19 @@
 #include "worker_gps.h"
 #include <time.h>
 #include <sys/time.h>
+#include <stdlib.h>
+
+// timegm is not provided by ESP32 newlib — treat tm as UTC via temporary TZ.
+static time_t utcEpoch(struct tm *t) {
+  char *prevTz = getenv("TZ");
+  setenv("TZ", "UTC0", 1);
+  tzset();
+  time_t epoch = mktime(t);
+  if (prevTz) setenv("TZ", prevTz, 1);
+  else unsetenv("TZ");
+  tzset();
+  return epoch;
+}
 
 // ── GPS state ─────────────────────────────────────────────────────────────────
 bool gpsOk = false;
@@ -83,7 +96,7 @@ void setClockFromGPS() {
   t.tm_hour = gps.time.hour();
   t.tm_min  = gps.time.minute();
   t.tm_sec  = gps.time.second();
-  time_t epoch = timegm(&t);
+  time_t epoch = utcEpoch(&t);
   struct timeval tv = { epoch, 0 };
   settimeofday(&tv, nullptr);
   clockSet = true;
