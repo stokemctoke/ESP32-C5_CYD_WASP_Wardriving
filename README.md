@@ -353,7 +353,6 @@ To change home WiFi credentials, API keys, or LED patterns, edit `/wasp.cfg` on 
 ```
 /
 ├── README.md                      ← you are here
-├── ARCHIVE.md                     ← stage14_last_monolith/ reference (do not flash)
 ├── HARDWARE_JC2432W328C.md        ← CYD board pinout and component notes
 ├── LICENSE                        ← MIT
 ├── SECURITY.md                    ← disclosure policy + default credential warning
@@ -361,9 +360,6 @@ To change home WiFi credentials, API keys, or LED patterns, edit `/wasp.cfg` on 
 ├── worker.cfg.example             ← Worker SD config template
 ├── ci/                            ← TFT_eSPI pin setup for CI builds
 ├── .github/workflows/ci.yml       ← compile verification (Nest + Worker)
-├── stage14_last_monolith/         ← archived pre-modular monolith; no touch UI
-│   ├── nest/
-│   └── worker/
 └── stage15/                       ← active firmware (flash this)
     ├── nest/
     │   ├── nest.ino               ← CYD: setup(), loop(), FreeRTOS task spawn
