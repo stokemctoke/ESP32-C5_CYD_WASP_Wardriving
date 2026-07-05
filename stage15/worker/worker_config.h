@@ -23,6 +23,9 @@ extern int cycleDelayMs;
 extern int maxLogBytes;
 extern int lowHeapThreshold;
 
+// ── Debug ────────────────────────────────────────────────────────────────────
+extern bool verboseSerial;
+
 // ── GPS ──────────────────────────────────────────────────────────────────────
 extern int gpsBaud;
 extern int gpsRxPin;
