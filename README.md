@@ -237,7 +237,6 @@ Both devices use a simple `key=value` config file on their own SD card. Lines st
 | `apSsid` | `WASP-Nest` | Nest AP name that workers connect to for file sync |
 | `apPsk` | `waspswarm` | Nest AP password |
 | `uploadToken` | `waspswarm` | Shared secret for TCP :8080 and HTTP `/upload` (must match `worker.cfg`) |
-| `swarmId` | `0` | ESP-NOW swarm filter (`0` = accept all workers) |
 | `wigleBasicToken` | — | WiGLE 'Encoded for use' API token |
 | `wdgwarsApiKey` | — | WDGWars API key (64 hex chars) |
 | `nestLedBoot` | `FFFFFF,3,50,50` | LED event: `colour(hex),flashes,onMs,offMs` |
@@ -349,6 +348,8 @@ To change home WiFi credentials, API keys, or LED patterns, edit `/wasp.cfg` on 
 ├── ci/                            ← TFT_eSPI pin setup for CI builds
 ├── .github/workflows/ci.yml       ← compile verification (Nest + Worker)
 └── stage15/                       ← active firmware (flash this)
+    ├── common/
+    │   └── wasp_packets.h         ← shared ESP-NOW packet layouts (Nest + Worker)
     ├── nest/
     │   ├── nest.ino               ← CYD: setup(), loop(), FreeRTOS task spawn
     │   ├── nest_types.h           ← shared structs, constants, pin defines

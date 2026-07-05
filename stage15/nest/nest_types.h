@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <WString.h>
+#include "../common/wasp_packets.h"
 
 // ── Pins ──────────────────────────────────────────────────────────────────────
 #define TFT_BACKLIGHT  21
@@ -18,7 +19,6 @@
 
 // ── Network ───────────────────────────────────────────────────────────────────
 #define WASP_DEFAULT_UPLOAD_TOKEN "waspswarm"
-#define ESPNOW_CHANNEL          1
 #define HOME_UPLOAD_INTERVAL_MS 300000
 #define HOME_CONNECT_TIMEOUT_MS  15000
 
@@ -51,11 +51,6 @@
 #define CLR_DIVIDER   0x2125   // #26262F — row dividers
 #define CLR_FTR_BG    0x10A3   // #15151B — footer bar
 #define CLR_ERROR     0xF986   // #FF3333 — errors, weak RSSI, delete (not brand — kept red)
-
-// ── Packet types ─────────────────────────────────────────────────────────────
-#define WASP_PKT_SUMMARY   0x01
-#define WASP_PKT_HEARTBEAT 0x02
-#define WASP_FIRMWARE_VER  15
 
 // ── Touch (CST820 capacitive on I²C) ──────────────────────────────────────────
 // JC2432W328C uses a CST820 capacitive controller, not the resistive XPT2046.
@@ -117,42 +112,6 @@ struct wasp_config_t {
   char uploadToken[64];
   char wigleBasicToken[128];
   char wdgwarsApiKey[72];
-  uint16_t swarmId;        // 0 = accept all ESP-NOW senders
 };
 
-// ── ESP-NOW packet structs ────────────────────────────────────────────────────
-typedef struct __attribute__((packed)) {
-  uint8_t  type;
-  uint8_t  workerMac[6];
-  uint8_t  nodeType;
-  uint16_t swarmId;
-  uint8_t  loyaltyLevel;
-  uint8_t  gangId;
-  uint8_t  firmwareVer;
-  uint8_t  battLevel;
-  uint16_t playerLevel;
-  uint8_t  boostLevel;
-  uint8_t  reserved[7];
-} heartbeat_t;             // 24 bytes
-
-typedef struct __attribute__((packed)) {
-  uint8_t  type;
-  uint8_t  workerMac[6];
-  uint8_t  gpsFix;
-  float    lat, lon, altM;
-  uint8_t  sats;
-  float    hdop;
-  uint16_t wifiTotal;
-  uint8_t  wifi2g, wifi5g;
-  uint16_t bleCount;
-  int8_t   bestRssi;
-  uint32_t cycleCount;
-  uint16_t swarmId;
-  uint8_t  loyaltyLevel;
-  uint8_t  gangId;
-  uint8_t  firmwareVer;
-  uint8_t  battLevel;
-  uint16_t playerLevel;
-  uint8_t  boostLevel;
-  uint8_t  reserved[7];
-} scan_summary_t;          // 52 bytes
+// ESP-NOW packet layouts: stage15/common/wasp_packets.h

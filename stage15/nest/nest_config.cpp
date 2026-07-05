@@ -53,7 +53,6 @@ bool loadConfig() {
     else if (key == "uploadToken")     { val.toCharArray(cfg.uploadToken,     sizeof(cfg.uploadToken));     loaded++; }
     else if (key == "wigleBasicToken") { val.toCharArray(cfg.wigleBasicToken, sizeof(cfg.wigleBasicToken)); loaded++; }
     else if (key == "wdgwarsApiKey")   { val.toCharArray(cfg.wdgwarsApiKey,   sizeof(cfg.wdgwarsApiKey));   loaded++; }
-    else if (key == "swarmId")         { cfg.swarmId = (uint16_t)val.toInt(); loaded++; }
     else if (key == "nestLedBoot")        parseNestLedEvent(val, evNestBoot);
     else if (key == "nestLedHeartbeat")   parseNestLedEvent(val, evNestHeartbeat);
     else if (key == "nestLedChunk")       parseNestLedEvent(val, evNestChunk);
@@ -72,6 +71,5 @@ bool loadConfig() {
   Serial.printf("[CFG]   Home    : %s\n", cfg.homeSsid[0] ? cfg.homeSsid : "(not set)");
   Serial.printf("[CFG]   WiGLE   : %s\n", cfg.wigleBasicToken[0] ? "token set" : "(not set)");
   Serial.printf("[CFG]   WDGWars : %s\n", cfg.wdgwarsApiKey[0]   ? "key set"   : "(not set)");
-  Serial.printf("[CFG]   Swarm   : %u%s\n", cfg.swarmId, cfg.swarmId ? "" : " (accept all)");
   return loaded > 0;
 }

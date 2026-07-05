@@ -50,19 +50,18 @@ void sendHeartbeat() {
 }
 
 void maybeHeartbeat() {
-  extern bool droneMode;
   if (millis() - lastHeartbeatMs >= heartbeatIntervalMs) sendHeartbeat();
 }
 
 void sendSummary(int wifiTotal, int wifi2g, int wifi5g,
                  int bleCount, int8_t bestRssi) {
   if (!espNowOk) return;
-  extern bool droneMode;
   extern uint32_t cycleCount;
   esp_wifi_set_channel(ESPNOW_CHANNEL, WIFI_SECOND_CHAN_NONE);
   scan_summary_t pkt = {};
   pkt.type        = WASP_PKT_SUMMARY;
   pkt.firmwareVer = WASP_FIRMWARE_VER;
+  WiFi.macAddress(pkt.workerMac);
   pkt.gpsFix     = (gpsOk && gps.location.isValid()) ? 1 : 0;
   pkt.lat        = pkt.gpsFix ? (float)gps.location.lat() : 0.0f;
   pkt.lon        = pkt.gpsFix ? (float)gps.location.lng() : 0.0f;
@@ -75,9 +74,6 @@ void sendSummary(int wifiTotal, int wifi2g, int wifi5g,
   pkt.bleCount   = (uint16_t)bleCount;
   pkt.bestRssi   = bestRssi;
   pkt.cycleCount = cycleCount + 1;
-  uint8_t mac[6];
-  WiFi.macAddress(mac);
-  memcpy(pkt.workerMac, mac, 6);
   esp_err_t err = esp_now_send(nestMac, (uint8_t*)&pkt, sizeof(pkt));
   if (err != ESP_OK) {
     Serial.printf("[WARN] esp_now_send summary failed: %s\n", esp_err_to_name(err));

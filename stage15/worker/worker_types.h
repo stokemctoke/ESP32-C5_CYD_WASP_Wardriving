@@ -1,12 +1,7 @@
 #pragma once
 
 #include <cstdint>
-
-// ── ESP-NOW ───────────────────────────────────────────────────────────────────
-#define ESPNOW_CHANNEL        1
-#define WASP_PKT_SUMMARY      0x01
-#define WASP_PKT_HEARTBEAT    0x02
-#define WASP_FIRMWARE_VER     15
+#include "../common/wasp_packets.h"
 
 // ── Nest AP ───────────────────────────────────────────────────────────────────
 #define NEST_UPLOAD_PORT      8080
@@ -78,55 +73,4 @@ struct cycle_slot_t {
   ble_entry_t  ble[MAX_BLE_PER_SLOT];
 };
 
-// ── ESP-NOW packet types ──────────────────────────────────────────────────────
-// Extended packet header (appended to both packet types). All fields zero-filled
-// by senders that do not yet populate them. Receiver never rejects solely because
-// extended fields are zero.
-//
-//  swarmId     — djb2 hash of swarm name; nest filters ESP-NOW on this
-//  loyaltyLevel— 0=wild, 255=fully loyal (drone game mechanic)
-//  gangId      — WDGWars gang affiliation (0=ungrouped)
-//  firmwareVer — sender firmware stage; for cross-swarm compat checks
-//  battLevel   — 0–100 %, 255=unknown
-//  playerLevel — rank / promotion mechanic
-//  boostLevel  — active boost / buff tier
-//  reserved    — zero-filled; reserved for future game fields
-//
-// heartbeat_t  : 8 + 16 = 24 bytes
-// scan_summary_t: 36 + 16 = 52 bytes
-
-typedef struct __attribute__((packed)) {
-  uint8_t  type;
-  uint8_t  workerMac[6];
-  uint8_t  nodeType;       // 0x00 = worker, 0x01 = drone
-  uint16_t swarmId;        // djb2 hash of swarm name (0 until swarm config added)
-  uint8_t  loyaltyLevel;   // 0=wild, 255=fully loyal (drone mechanic)
-  uint8_t  gangId;         // WDGWars gang affiliation (0=ungrouped)
-  uint8_t  firmwareVer;    // WASP_FIRMWARE_VER
-  uint8_t  battLevel;      // 0-100%, 255=unknown
-  uint16_t playerLevel;    // rank / promotion mechanic
-  uint8_t  boostLevel;     // active boost / buff tier
-  uint8_t  reserved[7];    // zero-filled, future game fields
-} heartbeat_t;             // 24 bytes
-
-typedef struct __attribute__((packed)) {
-  uint8_t  type;
-  uint8_t  workerMac[6];
-  uint8_t  gpsFix;
-  float    lat, lon, altM;
-  uint8_t  sats;
-  float    hdop;
-  uint16_t wifiTotal;
-  uint8_t  wifi2g, wifi5g;
-  uint16_t bleCount;
-  int8_t   bestRssi;
-  uint32_t cycleCount;
-  uint16_t swarmId;
-  uint8_t  loyaltyLevel;
-  uint8_t  gangId;
-  uint8_t  firmwareVer;
-  uint8_t  battLevel;
-  uint16_t playerLevel;
-  uint8_t  boostLevel;
-  uint8_t  reserved[7];
-} scan_summary_t;          // 52 bytes
+// ESP-NOW packet layouts: stage15/common/wasp_packets.h

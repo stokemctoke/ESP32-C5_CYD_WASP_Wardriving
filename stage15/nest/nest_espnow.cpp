@@ -1,12 +1,7 @@
 #include "nest_espnow.h"
-#include "nest_config.h"
 #include "nest_registry.h"
 #include "nest_led.h"
 #include <Arduino.h>
-
-static bool acceptSwarmId(uint16_t pktSwarmId) {
-  return cfg.swarmId == 0 || pktSwarmId == cfg.swarmId;
-}
 
 static void maybeWarnFirmware(uint8_t fwVer, const uint8_t workerMac[6]) {
   if (fwVer == 0 || fwVer == WASP_FIRMWARE_VER) return;
@@ -38,18 +33,11 @@ void onDataRecv(const esp_now_recv_info_t* info, const uint8_t* data, int len) {
   if (!info || !data || len < 1) return;
   int rssi = info->rx_ctrl ? info->rx_ctrl->rssi : 0;
 
-  if (data[0] == WASP_PKT_HEARTBEAT && len >= 7) {
+  if (data[0] == WASP_PKT_HEARTBEAT && len >= (int)sizeof(heartbeat_t)) {
     const heartbeat_t* pkt = (const heartbeat_t*)data;
-    uint16_t pktSwarmId = (len >= 10) ? pkt->swarmId : 0;
-    if (!acceptSwarmId(pktSwarmId)) {
-      Serial.printf("[NEST] Ignored heartbeat from foreign swarm (id %u, filter %u)\n",
-                    pktSwarmId, cfg.swarmId);
-      return;
-    }
-    if (len >= 13) maybeWarnFirmware(pkt->firmwareVer, pkt->workerMac);
+    maybeWarnFirmware(pkt->firmwareVer, pkt->workerMac);
 
     ledHeartbeatFlag = true;
-    uint8_t nodeType = (len >= 8) ? pkt->nodeType : 0;
     uint32_t ago = 0;
 
     taskENTER_CRITICAL(&gLock);
@@ -58,13 +46,13 @@ void onDataRecv(const esp_now_recv_info_t* info, const uint8_t* data, int len) {
       ago = (workers[idx].lastSeenMs > 0) ? (millis() - workers[idx].lastSeenMs) / 1000 : 0;
       workers[idx].lastSeenMs = millis();
       workers[idx].rssi       = (int8_t)rssi;
-      workers[idx].nodeType   = nodeType;
+      workers[idx].nodeType   = pkt->nodeType;
     }
     taskEXIT_CRITICAL(&gLock);
 
     taskENTER_CRITICAL(&espnowLogLock);
     memcpy(hbLog.mac, pkt->workerMac, 6);
-    hbLog.nodeType = nodeType;
+    hbLog.nodeType = pkt->nodeType;
     hbLog.rssi     = (int8_t)rssi;
     hbLog.agoSec   = ago;
     hbLogPending   = true;
@@ -72,16 +60,10 @@ void onDataRecv(const esp_now_recv_info_t* info, const uint8_t* data, int len) {
     return;
   }
 
-  if (data[0] != WASP_PKT_SUMMARY || len < 36) return;
+  if (data[0] != WASP_PKT_SUMMARY || len < (int)sizeof(scan_summary_t)) return;
 
   const scan_summary_t* pkt = (const scan_summary_t*)data;
-  uint16_t pktSwarmId = (len >= 38) ? pkt->swarmId : 0;
-  if (!acceptSwarmId(pktSwarmId)) {
-    Serial.printf("[NEST] Ignored summary from foreign swarm (id %u, filter %u)\n",
-                  pktSwarmId, cfg.swarmId);
-    return;
-  }
-  if (len >= 41) maybeWarnFirmware(pkt->firmwareVer, pkt->workerMac);
+  maybeWarnFirmware(pkt->firmwareVer, pkt->workerMac);
 
   taskENTER_CRITICAL(&gLock);
   int idx = findOrAddWorker(pkt->workerMac);

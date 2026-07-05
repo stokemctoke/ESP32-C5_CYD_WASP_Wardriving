@@ -14,9 +14,6 @@ homePsk=YourHomeWiFiPassword
 apSsid=WASP-Nest
 apPsk=waspswarm
 
-# Swarm ID — djb2 hash of swarm name; 0 = accept all workers (default)
-#swarmId=0
-
 # Upload auth — shared secret for TCP :8080 and HTTP POST /upload (must match worker.cfg)
 uploadToken=waspswarm
 
