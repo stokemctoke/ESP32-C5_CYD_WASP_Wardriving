@@ -67,6 +67,10 @@ struct cycle_slot_t {
   bool         used;
   bool         uploaded;
   uint32_t     capturedMs;
+  bool         gpsFix;
+  float        lat, lon, altM;
+  float        accuracy;
+  char         timestamp[20];   // WiGLE FirstSeen, captured at commit
   uint8_t      wifiCount;
   uint8_t      bleCount;
   wifi_entry_t wifi[MAX_WIFI_PER_SLOT];
