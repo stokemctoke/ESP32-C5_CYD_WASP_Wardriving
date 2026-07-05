@@ -95,6 +95,9 @@ struct worker_entry_t {
   uint32_t lastSummaryMs;
   int8_t   rssi;
   uint8_t  gpsFix;
+  float    lat, lon, altM;
+  uint8_t  sats;
+  float    hdop;
   uint16_t wifiTotal;
   uint8_t  wifi2g, wifi5g;
   uint16_t bleCount;

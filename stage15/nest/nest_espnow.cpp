@@ -72,6 +72,11 @@ void onDataRecv(const esp_now_recv_info_t* info, const uint8_t* data, int len) {
     workers[idx].lastSummaryMs = millis();
     workers[idx].rssi          = (int8_t)rssi;
     workers[idx].gpsFix        = pkt->gpsFix;
+    workers[idx].lat           = pkt->lat;
+    workers[idx].lon           = pkt->lon;
+    workers[idx].altM          = pkt->altM;
+    workers[idx].sats          = pkt->sats;
+    workers[idx].hdop          = pkt->hdop;
     workers[idx].wifiTotal     = pkt->wifiTotal;
     workers[idx].wifi2g        = pkt->wifi2g;
     workers[idx].wifi5g        = pkt->wifi5g;

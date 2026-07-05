@@ -262,6 +262,13 @@ void drawWorkerDetail() {
 
   tft.setTextColor(w->gpsFix ? CLR_GPS_OK : CLR_GPS_NO, CLR_BG);
   tft.drawString(w->gpsFix ? "GPS: FIX" : "GPS: NO FIX", 6, y); y += lh;
+  if (w->gpsFix) {
+    tft.setTextColor(CLR_LABEL, CLR_BG);
+    snprintf(buf, sizeof(buf), "  %.5f, %.5f", w->lat, w->lon);
+    tft.drawString(buf, 6, y); y += lh;
+    snprintf(buf, sizeof(buf), "  alt %.0fm  sats %u  hdop %.1f", w->altM, w->sats, w->hdop);
+    tft.drawString(buf, 6, y); y += lh;
+  }
 
   tft.setTextColor(CLR_LABEL, CLR_BG);
   if (w->lastSummaryMs > 0) {
