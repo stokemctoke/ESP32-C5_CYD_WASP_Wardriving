@@ -57,6 +57,7 @@ static void drawScreenHeader(const char* title) {
   tft.setTextFont(4);
   tft.setTextDatum(ML_DATUM);
   tft.drawString("<", 6, HEADER_H / 2);
+  tft.drawRect(2, 2, BACK_BTN_W, BACK_BTN_H - 4, CLR_HIGHLIGHT);
   tft.setTextFont(2);
   tft.setTextDatum(MC_DATUM);
   tft.drawString(title, 148, HEADER_H / 2);
@@ -65,7 +66,7 @@ static void drawScreenHeader(const char* title) {
 
 static void drawBtn(int x, int y, int w, int h, const char* label) {
   tft.fillRect(x, y, w, h, CLR_BTN_BG);
-  tft.drawRect(x, y, w, h, CLR_LABEL);
+  tft.drawRect(x, y, w, h, CLR_BTN_ACT);
   tft.setTextDatum(MC_DATUM);
   tft.setTextFont(2);
   tft.setTextColor(CLR_HDR_FG, CLR_BTN_BG);
@@ -520,10 +521,10 @@ void drawSettings() {
 
   const int btnY = y;
   if (isHomeUploadRunning()) {
-    tft.fillRect(10, btnY, 220, 34, CLR_STALE);
+    tft.fillRect(10, btnY, 220, 34, CLR_BUSY);
     tft.setTextDatum(MC_DATUM);
     tft.setTextFont(2);
-    tft.setTextColor(CLR_BG, CLR_STALE);
+    tft.setTextColor(CLR_HDR_FG, CLR_BUSY);
     tft.drawString("Uploading...", 120, btnY + 17);
   } else {
     drawBtn(10, btnY, 220, 34, "UPLOAD NOW");
