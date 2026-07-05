@@ -174,7 +174,10 @@ void drawHome() {
   tft.setTextDatum(ML_DATUM);
   tft.setTextColor(CLR_LABEL, CLR_BG);
   char buf[32];
-  snprintf(buf, sizeof(buf), "Workers: %d  ch:%d", active, ESPNOW_CHANNEL);
+  if (active > MAX_ROWS)
+    snprintf(buf, sizeof(buf), "Workers: %d +%d  ch:%d", MAX_ROWS, active - MAX_ROWS, ESPNOW_CHANNEL);
+  else
+    snprintf(buf, sizeof(buf), "Workers: %d  ch:%d", active, ESPNOW_CHANNEL);
   tft.drawString(buf, 6, HEADER_H + STATUS_H / 2);
 
   if (cfg.homeSsid[0]) {
