@@ -17,6 +17,10 @@ void clearPending() {
 
 void commitCycle() {
   cycle_slot_t& slot = cycleBuffer[writeHead];
+  if (slot.used && !slot.uploaded) {
+    Serial.printf("[WARN] Overwriting unuploaded slot %u — nest unreachable? (%d pending)\n",
+                  writeHead, countUnuploaded());
+  }
   slot.used = true;
   slot.uploaded = false;
   slot.capturedMs = millis();
