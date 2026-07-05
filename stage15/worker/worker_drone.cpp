@@ -20,6 +20,17 @@ void commitCycle() {
   slot.used = true;
   slot.uploaded = false;
   slot.capturedMs = millis();
+
+  bool hasFix = gpsOk && gps.location.isValid();
+  slot.gpsFix   = hasFix;
+  slot.lat      = hasFix ? (float)gps.location.lat() : 0.0f;
+  slot.lon      = hasFix ? (float)gps.location.lng() : 0.0f;
+  slot.altM     = (hasFix && gps.altitude.isValid()) ? (float)gps.altitude.meters() : 0.0f;
+  slot.accuracy = (hasFix && gps.hdop.isValid())     ? (float)(gps.hdop.hdop() * 5.0) : 999.9f;
+  String ts = gpsTimestamp();
+  if (ts.isEmpty()) ts = nowTimestamp();
+  ts.toCharArray(slot.timestamp, sizeof(slot.timestamp));
+
   slot.wifiCount = pendingWifiCount;
   slot.bleCount = pendingBleCount;
   memcpy(slot.wifi, pendingWifi, pendingWifiCount * sizeof(wifi_entry_t));
@@ -57,9 +68,10 @@ String buildCSV(int idx) {
     String ssid = String(w.ssid);
     ssid.replace("\"", "\"\"");
     char line[200];
-    snprintf(line, sizeof(line), "%s,\"%s\",%s,%s,%d,%d,%d,0.000000,0.000000,0,999.9,WIFI,,",
+    snprintf(line, sizeof(line), "%s,\"%s\",%s,%s,%d,%d,%d,%.6f,%.6f,%.0f,%.1f,WIFI,,",
              bssid, ssid.c_str(), wigleAuth((wifi_auth_mode_t)w.auth),
-             nowTimestamp().c_str(), w.channel, channelToFreq(w.channel), w.rssi);
+             s.timestamp, w.channel, channelToFreq(w.channel), w.rssi,
+             s.lat, s.lon, s.altM, s.accuracy);
     csv += line; csv += '\n';
   }
 
@@ -73,8 +85,9 @@ String buildCSV(int idx) {
     char mfgrField[8] = "";
     if (b.hasMfgr) snprintf(mfgrField, sizeof(mfgrField), "%u", b.mfgrId);
     char line[200];
-    snprintf(line, sizeof(line), "%s,\"%s\",[BLE],%s,0,,%d,0.000000,0.000000,0,999.9,BLE,,%s",
-             addr, name.c_str(), nowTimestamp().c_str(), b.rssi, mfgrField);
+    snprintf(line, sizeof(line), "%s,\"%s\",[BLE],%s,0,,%d,%.6f,%.6f,%.0f,%.1f,BLE,,%s",
+             addr, name.c_str(), s.timestamp, b.rssi,
+             s.lat, s.lon, s.altM, s.accuracy, mfgrField);
     csv += line; csv += '\n';
   }
   return csv;
