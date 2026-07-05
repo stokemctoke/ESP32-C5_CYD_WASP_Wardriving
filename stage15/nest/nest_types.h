@@ -42,12 +42,13 @@
 #define CLR_HDR_BG    0x18E4   // #1C1C24 — header / panel
 #define CLR_HDR_FG    0xF77C   // #F2EDE6 — primary text
 #define CLR_LABEL     0x9CB2   // #9E9890 — secondary text
-#define CLR_ACTIVE    0xF5C8   // #F5B445 — worker / positive highlight
+#define CLR_ACTIVE    0xF5C8   // #F5B445 — worker highlight / positive
 #define CLR_DRONE     0xC302   // #C45C12 — drone accent
 #define CLR_STALE     0xEC81   // #E8900A — stale / warning
 #define CLR_OFFLINE   0x5248   // #504A44 — offline / muted
-#define CLR_GPS_OK    0xF5C8   // #F5B445 — GPS fix / success
+#define CLR_GPS_OK    0xEC81   // #E8900A — GPS fix (amber, distinct from worker gold)
 #define CLR_GPS_NO    0x9CB2   // #9E9890 — no fix
+#define CLR_BUSY      0xC302   // #C45C12 — in-progress (upload, etc.)
 #define CLR_DIVIDER   0x2125   // #26262F — row dividers
 #define CLR_FTR_BG    0x10A3   // #15151B — footer bar
 #define CLR_ERROR     0xF986   // #FF3333 — errors, weak RSSI, delete (not brand — kept red)
