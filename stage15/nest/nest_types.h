@@ -34,18 +34,23 @@
 #define MAX_ROWS   5
 #define FOOTER_H  16
 
-// ── Colours (RGB565) ──────────────────────────────────────────────────────────
-#define CLR_BG        0x0002
-#define CLR_HDR_BG    0xFD00
-#define CLR_HDR_FG    0xF7BF
-#define CLR_LABEL     0x9D15
-#define CLR_ACTIVE    0xFFE0
-#define CLR_STALE     0xFD00
-#define CLR_OFFLINE   0x2945
-#define CLR_GPS_OK    0x07FF
-#define CLR_GPS_NO    0x9D15
-#define CLR_DIVIDER   0x2945
-#define CLR_FTR_BG    0x2945
+// ── Colours (RGB565) — Gallus Gadgets brand palette ───────────────────────────
+// Backgrounds: #0E0E12 #15151B #1C1C24 #26262F
+// Accents:     #E8900A #F5B445 #C45C12 #8B3A0F
+// Text/UI:     #F2EDE6 #9E9890 #504A44 #2C2C35
+#define CLR_BG        0x0862   // #0E0E12 — main background
+#define CLR_HDR_BG    0x18E4   // #1C1C24 — header / panel
+#define CLR_HDR_FG    0xF77C   // #F2EDE6 — primary text
+#define CLR_LABEL     0x9CB2   // #9E9890 — secondary text
+#define CLR_ACTIVE    0xF5C8   // #F5B445 — worker / positive highlight
+#define CLR_DRONE     0xC302   // #C45C12 — drone accent
+#define CLR_STALE     0xEC81   // #E8900A — stale / warning
+#define CLR_OFFLINE   0x5248   // #504A44 — offline / muted
+#define CLR_GPS_OK    0xF5C8   // #F5B445 — GPS fix / success
+#define CLR_GPS_NO    0x9CB2   // #9E9890 — no fix
+#define CLR_DIVIDER   0x2125   // #26262F — row dividers
+#define CLR_FTR_BG    0x10A3   // #15151B — footer bar
+#define CLR_ERROR     0x89C1   // #8B3A0F — error / delete
 
 // ── Packet types ─────────────────────────────────────────────────────────────
 #define WASP_PKT_SUMMARY   0x01
@@ -65,9 +70,9 @@
 #define BACK_BTN_H  HEADER_H    // back button tap area height (matches header)
 
 // ── UI colours ────────────────────────────────────────────────────────────────
-#define CLR_BTN_BG    0x2104    // dark button background
-#define CLR_BTN_ACT   0x4208    // active / pressed button
-#define CLR_HIGHLIGHT 0xFD20    // selected item
+#define CLR_BTN_BG    0x18E4   // #1C1C24 — button background
+#define CLR_BTN_ACT   0x2125   // #26262F — pressed / border emphasis
+#define CLR_HIGHLIGHT 0xEC81   // #E8900A — selected item
 
 // ── Screen IDs ────────────────────────────────────────────────────────────────
 enum ScreenId {

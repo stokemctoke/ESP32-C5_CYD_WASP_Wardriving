@@ -224,6 +224,10 @@ Flash `stage15/nest/nest.ino` to the CYD and `stage15/worker/worker.ino` to the 
 
 Both devices use a simple `key=value` config file on their own SD card. Lines starting with `#` are comments; no spaces around `=`.
 
+**Factory reset:** place an empty `/reset.cfg` on the SD card to ignore the config file and boot with compiled-in defaults. Remove it once you are ready to use your config again.
+
+> **Security:** Default AP passwords (`waspswarm`) are for first boot only. Change `apPsk`, `nestPsk`, and `uploadToken` before field use — see `SECURITY.md`.
+
 **Nest — `/wasp.cfg`** (see `wasp.cfg.example`)
 
 | Key | Default | Description |
@@ -232,6 +236,8 @@ Both devices use a simple `key=value` config file on their own SD card. Lines st
 | `homePsk` | — | Home Wi-Fi password |
 | `apSsid` | `WASP-Nest` | Nest AP name that workers connect to for file sync |
 | `apPsk` | `waspswarm` | Nest AP password |
+| `uploadToken` | `waspswarm` | Shared secret for TCP :8080 and HTTP `/upload` (must match `worker.cfg`) |
+| `swarmId` | `0` | ESP-NOW swarm filter (`0` = accept all workers) |
 | `wigleBasicToken` | — | WiGLE 'Encoded for use' API token |
 | `wdgwarsApiKey` | — | WDGWars API key (64 hex chars) |
 | `nestLedBoot` | `FFFFFF,3,50,50` | LED event: `colour(hex),flashes,onMs,offMs` |
@@ -266,6 +272,7 @@ Both devices use a simple `key=value` config file on their own SD card. Lines st
 | `nestSsid` | `WASP-Nest` | Nest AP SSID to connect to for sync |
 | `nestPsk` | `waspswarm` | Nest AP password |
 | `nestIp` | `192.168.4.1` | Nest IP address |
+| `uploadToken` | `waspswarm` | Shared upload auth token (must match `wasp.cfg`) |
 | `nestMac` | `A4:F0:0F:5D:96:D4` | Nest STA MAC for ESP-NOW heartbeats (`AA:BB:CC:DD:EE:FF`) |
 | `syncEvery` | `25` | Sync to nest every N scan cycles |
 | `heartbeatIntervalMs` | `5000` | ms between ESP-NOW heartbeats |
@@ -320,7 +327,9 @@ HOME ──tap worker row──► WORKER DETAIL ──VIEW FILES──► FILE 
 
 Home auto-refreshes worker stats once per second. Detail screens repaint only on navigation to avoid flicker.
 
-Worker rows use a coloured dot and letter: green **W** = Worker (SD + GPS), cyan **D** = Drone (RAM buffer). Rows fade to stale amber after 10 s without a heartbeat and disappear from the list after 90 s.
+Worker rows use a coloured dot and letter: gold **W** = Worker (SD + GPS), amber **D** = Drone (RAM buffer). Rows fade to stale orange after 10 s without a heartbeat and disappear from the list after 30 s.
+
+The Nest touch UI uses the [Gallus Gadgets](https://gallusgadgets.com) brand palette — dark charcoal backgrounds with warm gold/amber accents.
 
 To change home WiFi credentials, API keys, or LED patterns, edit `/wasp.cfg` on the Nest SD card and reboot — the settings screen is read-only except for **UPLOAD NOW**.
 
@@ -331,6 +340,7 @@ To change home WiFi credentials, API keys, or LED patterns, edit `/wasp.cfg` on 
 ```
 /
 ├── README.md                      ← you are here
+├── WASP_Repo-Image.jpg            ← repo banner
 ├── HARDWARE_JC2432W328C.md        ← CYD board pinout and component notes
 ├── LICENSE                        ← MIT
 ├── SECURITY.md                    ← disclosure policy + default credential warning
@@ -343,6 +353,8 @@ To change home WiFi credentials, API keys, or LED patterns, edit `/wasp.cfg` on 
     │   ├── nest.ino               ← CYD: setup(), loop(), FreeRTOS task spawn
     │   ├── nest_types.h           ← shared structs, constants, pin defines
     │   ├── nest_config.h/cpp      ← loadConfig(), wasp.cfg parsing
+    │   ├── nest_ca.h              ← TLS CA bundle (WiGLE + WDGWars)
+    │   ├── nest_sd.h              ← SD card mutex
     │   ├── nest_led.h/cpp         ← onboard RGB LED abstraction
     │   ├── nest_registry.h/cpp    ← worker registry, ESP-NOW state
     │   ├── nest_espnow.h/cpp      ← ESP-NOW receive callback

@@ -33,10 +33,17 @@ void uiInvalidateFileList() { fileListLoaded = false; }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 static uint16_t rssiColor(int8_t r) {
-  if (r > -50) return 0xFFE0;
-  if (r > -70) return 0xFD00;
-  if (r > -85) return 0x9D15;
-  return TFT_RED;
+  if (r > -50) return CLR_ACTIVE;
+  if (r > -70) return CLR_STALE;
+  if (r > -85) return CLR_DRONE;
+  return CLR_ERROR;
+}
+
+static void drawBrandMark() {
+  tft.setTextFont(1);
+  tft.setTextDatum(BR_DATUM);
+  tft.setTextColor(CLR_LABEL, CLR_HDR_BG);
+  tft.drawString("Gallus Gadgets", 236, HEADER_H - 2);
 }
 
 static void drawScreenHeader(const char* title) {
@@ -48,6 +55,7 @@ static void drawScreenHeader(const char* title) {
   tft.setTextFont(2);
   tft.setTextDatum(MC_DATUM);
   tft.drawString(title, 148, HEADER_H / 2);
+  drawBrandMark();
 }
 
 static void drawBtn(int x, int y, int w, int h, const char* label) {
@@ -70,15 +78,13 @@ void drawBootMsg(const char* msg) {
 
 void drawHeader() {
   tft.fillRect(0, 0, 240, HEADER_H, CLR_HDR_BG);
-  tft.setTextColor(CLR_HDR_FG, CLR_HDR_BG);
-  tft.setTextDatum(ML_DATUM);
-  tft.setTextFont(4);
-  tft.drawString("W.A.S.P. NEST", 6, HEADER_H / 2);
   tft.setTextFont(2);
-  tft.setTextDatum(MR_DATUM);
-  char buf[12];
-  snprintf(buf, sizeof(buf), "ch:%d", ESPNOW_CHANNEL);
-  tft.drawString(buf, 234, HEADER_H / 2);
+  tft.setTextDatum(TL_DATUM);
+  tft.setTextColor(CLR_HDR_FG, CLR_HDR_BG);
+  tft.drawString("W.A.S.P.", 6, 4);
+  tft.setTextFont(1);
+  tft.setTextColor(CLR_LABEL, CLR_HDR_BG);
+  tft.drawString("Gallus Gadgets", 6, 18);
 }
 
 // ── HOME ─────────────────────────────────────────────────────────────────────
@@ -88,7 +94,7 @@ static void drawWorkerRow(int row, const worker_entry_t& w) {
   bool active    = age < WORKER_TIMEOUT_MS;
   bool stale     = age >= 10000 && active;
   bool isDrone   = (w.nodeType == 1);
-  uint16_t base  = isDrone ? TFT_CYAN : CLR_ACTIVE;
+  uint16_t base  = isDrone ? CLR_DRONE : CLR_ACTIVE;
   uint16_t nameC = active ? (stale ? CLR_STALE : base) : CLR_OFFLINE;
 
   tft.fillRect(0, y, 240, ROW_H, CLR_BG);
@@ -163,7 +169,7 @@ void drawHome() {
   tft.setTextDatum(ML_DATUM);
   tft.setTextColor(CLR_LABEL, CLR_BG);
   char buf[32];
-  snprintf(buf, sizeof(buf), "Workers in range: %d", active);
+  snprintf(buf, sizeof(buf), "Workers: %d  ch:%d", active, ESPNOW_CHANNEL);
   tft.drawString(buf, 6, HEADER_H + STATUS_H / 2);
 
   if (cfg.homeSsid[0]) {
