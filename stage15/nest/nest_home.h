@@ -11,3 +11,4 @@ void restoreNestAP();
 void runHomeUploads();
 void requestHomeUpload();
 void startHomeUploadTask();
+bool isHomeUploadRunning();

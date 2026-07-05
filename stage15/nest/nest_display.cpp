@@ -514,7 +514,16 @@ void drawSettings() {
   snprintf(buf, sizeof(buf), "WDG:   %s", wdgSnap);
   tft.drawString(buf, 6, y); y += lh + 8;
 
-  drawBtn(10, y, 220, 34, "UPLOAD NOW");
+  const int btnY = y;
+  if (isHomeUploadRunning()) {
+    tft.fillRect(10, btnY, 220, 34, CLR_STALE);
+    tft.setTextDatum(MC_DATUM);
+    tft.setTextFont(2);
+    tft.setTextColor(CLR_BG, CLR_STALE);
+    tft.drawString("Uploading...", 120, btnY + 17);
+  } else {
+    drawBtn(10, btnY, 220, 34, "UPLOAD NOW");
+  }
   y += 42;
 
   tft.setTextFont(1);
@@ -535,11 +544,17 @@ void drawCurrentScreen() {
 }
 
 void refreshDisplay() {
-  // 1Hz tick: only Home auto-redraws because its worker stats are live.
-  // Detail screens are static and only repaint on navigation, which avoids
-  // the full-screen fillRect flicker. After in-place mutations, call
-  // drawCurrentScreen() instead.
-  if (uiCurrent() == SCR_HOME) drawHome();
+  // 1Hz tick: Home auto-redraws for live worker stats. Settings redraws when
+  // a manual upload finishes so the button returns to normal.
+  static bool prevUploadRunning = false;
+  bool uploading = isHomeUploadRunning();
+
+  if (uiCurrent() == SCR_HOME) {
+    drawHome();
+  } else if (uiCurrent() == SCR_SETTINGS && prevUploadRunning && !uploading) {
+    drawSettings();
+  }
+  prevUploadRunning = uploading;
 }
 
 void dispatchTap(int px, int py) {
@@ -652,12 +667,8 @@ void handleTapSettings(int px, int py) {
   // lh=20, so roughly y = 28 + 10 + 120 + 24 = 182, button height 34 → range ~182–216
   // Use generous range to be touch-friendly
   if (px > 10 && px < 230 && py > 170 && py < 230) {
-    tft.fillRect(10, 178, 220, 34, CLR_STALE);
-    tft.setTextDatum(MC_DATUM);
-    tft.setTextFont(2);
-    tft.setTextColor(CLR_BG, CLR_STALE);
-    tft.drawString("Uploading...", 120, 195);
+    if (isHomeUploadRunning()) return;
     requestHomeUpload();
-    // Keep partial "Uploading..." overlay; full settings refresh is issue #91.
+    drawSettings();
   }
 }

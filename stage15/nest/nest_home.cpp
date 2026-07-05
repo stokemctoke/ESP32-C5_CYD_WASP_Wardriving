@@ -27,6 +27,10 @@ void requestHomeUpload() {
   homeUploadRequested = true;
 }
 
+bool isHomeUploadRunning() {
+  return uploadRunning || homeUploadRequested;
+}
+
 static void homeUploadTask(void*) {
   for (;;) {
     if (homeUploadRequested) {
