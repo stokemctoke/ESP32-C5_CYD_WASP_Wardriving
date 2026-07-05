@@ -8,6 +8,16 @@
 uint32_t lastHeartbeatMs = 0;
 bool     espNowOk        = false;
 
+static uint32_t effectiveHeartbeatMs() {
+  static uint32_t interval = 0;
+  if (interval == 0) {
+    uint8_t mac[6];
+    WiFi.macAddress(mac);
+    interval = heartbeatIntervalMs + (uint32_t)(mac[5] % 20) * 100U;
+  }
+  return interval;
+}
+
 void onSendResult(const wifi_tx_info_t*, esp_now_send_status_t status) {
   Serial.printf("[WORKER] ESP-NOW TX %s\n",
                 status == ESP_NOW_SEND_SUCCESS ? "OK" : "FAILED");
@@ -50,7 +60,7 @@ void sendHeartbeat() {
 }
 
 void maybeHeartbeat() {
-  if (millis() - lastHeartbeatMs >= heartbeatIntervalMs) sendHeartbeat();
+  if (millis() - lastHeartbeatMs >= effectiveHeartbeatMs()) sendHeartbeat();
 }
 
 void sendSummary(int wifiTotal, int wifi2g, int wifi5g,
