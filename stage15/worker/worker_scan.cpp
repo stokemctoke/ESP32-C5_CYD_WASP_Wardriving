@@ -65,7 +65,11 @@ WiFiScanResult runWiFiScan() {
   }
 
   WiFiScanResult r = {0, 0, 0, -127};
-  if (n == WIFI_SCAN_FAILED || n < 0) { Serial.println("[WORKER] WiFi scan failed"); return r; }
+  if (n == WIFI_SCAN_FAILED || n < 0) {
+    Serial.println("[WORKER] WiFi scan failed");
+    WiFi.scanDelete();
+    return r;
+  }
   if (n == 0) { Serial.println("[WORKER] No networks found"); WiFi.scanDelete(); return r; }
 
   bool   hasFix   = gpsOk && gps.location.isValid();
