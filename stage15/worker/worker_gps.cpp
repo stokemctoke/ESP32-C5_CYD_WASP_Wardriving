@@ -1,4 +1,5 @@
 #include "worker_gps.h"
+#include "worker_config.h"
 #include <time.h>
 #include <sys/time.h>
 #include <stdlib.h>
@@ -55,6 +56,7 @@ bool detectGPS() {
 }
 
 void printGPSStatus() {
+  if (!verboseSerial) return;
   if (!gpsOk) { Serial.println("[WORKER] GPS  not present"); return; }
   if (gps.location.isValid()) {
     Serial.printf("[WORKER] GPS  %.6f, %.6f | alt %.1fm | sats %d | hdop %.2f\n",

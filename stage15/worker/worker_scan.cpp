@@ -30,9 +30,11 @@ void BLEScanCallbacks::onDiscovered(const NimBLEAdvertisedDevice* d) {
   bleRssis.push_back(d->getRSSI());
   bleMfgrIds.push_back(mfgrId);
   bleMfgrFlags.push_back(hasMfgr);
-  Serial.printf("  RSSI %4d  %-22s  %s\n",
-                d->getRSSI(), d->getAddress().toString().c_str(),
-                name.isEmpty() ? "[unnamed]" : name.c_str());
+  if (verboseSerial) {
+    Serial.printf("  RSSI %4d  %-22s  %s\n",
+                  d->getRSSI(), d->getAddress().toString().c_str(),
+                  name.isEmpty() ? "[unnamed]" : name.c_str());
+  }
 }
 
 const char* authTypeStr(wifi_auth_mode_t auth) {
@@ -53,7 +55,7 @@ WiFiScanResult runWiFiScan() {
   extern bool droneMode;
   extern File logFile;
   extern bool sdOk;
-  Serial.println("\n[WORKER] Starting WiFi scan (2.4 GHz + 5 GHz)...");
+  if (verboseSerial) Serial.println("\n[WORKER] Starting WiFi scan (2.4 GHz + 5 GHz)...");
   WiFi.setBandMode(WIFI_BAND_MODE_AUTO);
   int n = WiFi.scanNetworks(true, true, false, wifiChanMs);
   while (n == WIFI_SCAN_RUNNING) {
@@ -78,8 +80,10 @@ WiFiScanResult runWiFiScan() {
   double alt      = (hasFix && gps.altitude.isValid()) ? gps.altitude.meters() : 0.0;
   double accuracy = (hasFix && gps.hdop.isValid())     ? gps.hdop.hdop() * 5.0  : 999.9;
 
-  Serial.println("  #    Band  Ch   RSSI  Security        BSSID              SSID");
-  Serial.println("  ---  ----  --   ----  --------------  -----------------  ----");
+  if (verboseSerial) {
+    Serial.println("  #    Band  Ch   RSSI  Security        BSSID              SSID");
+    Serial.println("  ---  ----  --   ----  --------------  -----------------  ----");
+  }
 
   for (int i = 0; i < n; i++) {
     int  ch    = WiFi.channel(i);
@@ -89,11 +93,13 @@ WiFiScanResult runWiFiScan() {
     if (rssi > r.bestRssi) r.bestRssi = (int8_t)rssi;
 
     String ssid = WiFi.SSID(i);
-    Serial.printf("  %3d  %s  %2d  %4d  %-14s  %s  %s\n",
-                  i + 1, is_5g ? "5GHz" : "2.4G", ch, rssi,
-                  authTypeStr(WiFi.encryptionType(i)),
-                  WiFi.BSSIDstr(i).c_str(),
-                  ssid.isEmpty() ? "[hidden]" : ssid.c_str());
+    if (verboseSerial) {
+      Serial.printf("  %3d  %s  %2d  %4d  %-14s  %s  %s\n",
+                    i + 1, is_5g ? "5GHz" : "2.4G", ch, rssi,
+                    authTypeStr(WiFi.encryptionType(i)),
+                    WiFi.BSSIDstr(i).c_str(),
+                    ssid.isEmpty() ? "[hidden]" : ssid.c_str());
+    }
 
     if (!droneMode) {
       if (sdOk && logFile)
@@ -113,7 +119,8 @@ WiFiScanResult runWiFiScan() {
 
   r.total = n;
   Serial.printf("[WORKER] WiFi: %d network(s) — %d x 2.4GHz, %d x 5GHz\n", n, r.g2, r.g5);
-  if (!droneMode && !hasFix) Serial.println("         (no GPS fix — logged with fallback timestamp, 0,0 coords)");
+  if (verboseSerial && !droneMode && !hasFix)
+    Serial.println("         (no GPS fix — logged with fallback timestamp, 0,0 coords)");
   WiFi.scanDelete();
   return r;
 }
@@ -122,9 +129,11 @@ int runBLEScan() {
   extern bool droneMode;
   extern File logFile;
   extern bool sdOk;
-  Serial.printf("\n[WORKER] Starting BLE scan (%d ms)...\n", bleScanMs);
-  Serial.println("  RSSI  Address                 Name");
-  Serial.println("  ----  -------                 ----");
+  if (verboseSerial) {
+    Serial.printf("\n[WORKER] Starting BLE scan (%d ms)...\n", bleScanMs);
+    Serial.println("  RSSI  Address                 Name");
+    Serial.println("  ----  -------                 ----");
+  }
 
   bleAddrs.clear();
   bleNames.clear();
@@ -150,7 +159,7 @@ int runBLEScan() {
       double accuracy = (hasFix && gps.hdop.isValid())     ? gps.hdop.hdop() * 5.0  : 999.9;
       for (int i = 0; i < (int)bleAddrs.size(); i++)
         logBLERow(bleAddrs[i], bleNames[i], bleRssis[i], lat, lon, alt, accuracy, bleMfgrFlags[i], bleMfgrIds[i]);
-      if (!hasFix && bleAddrs.size() > 0)
+      if (verboseSerial && !hasFix && bleAddrs.size() > 0)
         Serial.println("         (no GPS fix — logged with fallback timestamp, 0,0 coords)");
     }
   } else {

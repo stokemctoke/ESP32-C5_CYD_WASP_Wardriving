@@ -46,6 +46,7 @@ ledType=ws2812           # ws2812  → addressable WS2812B/SK6812 on D0 (GPIO3) 
 # ── Log file ──────────────────────────────────────────────────────────────────
 #maxLogBytes=8192        # rotate log file above this size (bytes, 1024–65536)
 #lowHeapThreshold=30000  # free heap warning level in bytes
+#verboseSerial=false     # true = print every AP/BLE device and GPS status each cycle
 
 # ── LED event colours and timing — format: RRGGBB,flashes,onMs,offMs ──────────
 # Omit any line to keep the compiled-in default.

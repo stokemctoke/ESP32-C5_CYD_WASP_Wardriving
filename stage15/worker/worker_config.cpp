@@ -21,6 +21,7 @@ int cycleDelayMs = 2000; // ms delay at end of each cycle
 // ── Log file ─────────────────────────────────────────────────────────────────
 int maxLogBytes      = 8192;  // rotate log file above this size
 int lowHeapThreshold = 30000; // heap warning level in bytes
+bool verboseSerial   = false;
 
 // ── GPS ──────────────────────────────────────────────────────────────────────
 int gpsBaud   = 9600;
@@ -117,6 +118,7 @@ void loadWorkerConfig() {
       // Log & memory
       else if (key == "maxLogBytes")      maxLogBytes      = constrain(val.toInt(), 1024, 65536);
       else if (key == "lowHeapThreshold") lowHeapThreshold = max(8192, (int)val.toInt());
+      else if (key == "verboseSerial")    verboseSerial    = (val == "true" || val == "1");
     }
     cfg.close();
   }
