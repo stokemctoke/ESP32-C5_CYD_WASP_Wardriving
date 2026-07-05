@@ -1,6 +1,7 @@
 #include "nest_espnow.h"
 #include "nest_registry.h"
 #include "nest_led.h"
+#include "../common/wasp_mac.h"
 #include <Arduino.h>
 
 static void maybeWarnFirmware(uint8_t fwVer, const uint8_t workerMac[6]) {
@@ -106,9 +107,7 @@ void processEspNowLogs() {
 
     if (pending) {
       char mac[18];
-      snprintf(mac, sizeof(mac), "%02X:%02X:%02X:%02X:%02X:%02X",
-               snap.mac[0], snap.mac[1], snap.mac[2],
-               snap.mac[3], snap.mac[4], snap.mac[5]);
+      formatMacColon(snap.mac, mac, sizeof(mac));
       const char* nodeEmoji = snap.nodeType ? "🛸" : "🐝";
       char agoBuf[12];
       if (snap.agoSec == 0) snprintf(agoBuf, sizeof(agoBuf), "first");
@@ -137,9 +136,7 @@ void processEspNowLogs() {
     if (pending) {
       const scan_summary_t* pkt = &snap.pkt;
       char mac[18];
-      snprintf(mac, sizeof(mac), "%02X:%02X:%02X:%02X:%02X:%02X",
-               pkt->workerMac[0], pkt->workerMac[1], pkt->workerMac[2],
-               pkt->workerMac[3], pkt->workerMac[4], pkt->workerMac[5]);
+      formatMacColon(pkt->workerMac, mac, sizeof(mac));
 
       taskENTER_CRITICAL(&gLock);
       int inRange = countActiveWorkers();

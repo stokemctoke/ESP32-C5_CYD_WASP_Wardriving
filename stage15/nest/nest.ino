@@ -57,6 +57,7 @@
 #include "nest_touch.h"
 #include "nest_ui.h"
 #include "nest_sd.h"
+#include "../common/wasp_mac.h"
 
 bool                sdOk = false;
 SemaphoreHandle_t   sdMutex = nullptr;
@@ -65,10 +66,7 @@ SPIClass sdSpi(VSPI);
 static void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
   if (event == ARDUINO_EVENT_WIFI_AP_STACONNECTED) {
     char mac[18];
-    snprintf(mac, sizeof(mac), "%02X:%02X:%02X:%02X:%02X:%02X",
-             info.wifi_ap_staconnected.mac[0], info.wifi_ap_staconnected.mac[1],
-             info.wifi_ap_staconnected.mac[2], info.wifi_ap_staconnected.mac[3],
-             info.wifi_ap_staconnected.mac[4], info.wifi_ap_staconnected.mac[5]);
+    formatMacColon(info.wifi_ap_staconnected.mac, mac, sizeof(mac));
     Serial.printf("[NEST] Worker connected: %s\n", mac);
     taskENTER_CRITICAL(&gLock);
     int idx = findWorker(info.wifi_ap_staconnected.mac);

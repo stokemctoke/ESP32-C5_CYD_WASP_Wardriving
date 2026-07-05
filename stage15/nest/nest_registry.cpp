@@ -1,4 +1,5 @@
 #include "nest_registry.h"
+#include "../common/wasp_mac.h"
 #include <Arduino.h>
 
 worker_entry_t workers[MAX_WORKERS] = {};
@@ -30,18 +31,15 @@ int findOrAddWorker(const uint8_t* mac) {
     }
   }
   if (evictIdx < 0) {
-    snprintf(newcomer, sizeof(newcomer), "%02X:%02X:%02X:%02X:%02X:%02X",
-             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    formatMacColon(mac, newcomer, sizeof(newcomer));
     Serial.printf("[NEST] WARNING: registry full — no stale slots, dropping worker %s\n",
                   newcomer);
     return -1;
   }
 
   const uint8_t* ev = workers[evictIdx].mac;
-  snprintf(evicted, sizeof(evicted), "%02X:%02X:%02X:%02X:%02X:%02X",
-           ev[0], ev[1], ev[2], ev[3], ev[4], ev[5]);
-  snprintf(newcomer, sizeof(newcomer), "%02X:%02X:%02X:%02X:%02X:%02X",
-           mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+  formatMacColon(ev, evicted, sizeof(evicted));
+  formatMacColon(mac, newcomer, sizeof(newcomer));
   Serial.printf("[NEST] WARNING: registry full — evicted stale worker %s for %s\n",
                 evicted, newcomer);
 
@@ -72,14 +70,12 @@ void cleanRegistry() {
     if (offline) {
       memcpy(macB, workers[i].mac, 6);
       workers[i].offlineNotified = true;
-      snprintf(mac, sizeof(mac), "%02X:%02X:%02X:%02X:%02X:%02X",
-               macB[0], macB[1], macB[2], macB[3], macB[4], macB[5]);
+      formatMacColon(macB, mac, sizeof(mac));
     }
     taskEXIT_CRITICAL(&gLock);
     if (offline) Serial.printf("[NEST] Worker %s offline — no heartbeat for %u ms\n", mac, age);
     if (expired) {
-      snprintf(mac, sizeof(mac), "%02X:%02X:%02X:%02X:%02X:%02X",
-               macB[0], macB[1], macB[2], macB[3], macB[4], macB[5]);
+      formatMacColon(macB, mac, sizeof(mac));
       Serial.printf("[NEST] Worker %s expired — slot freed\n", mac);
     }
   }

@@ -5,6 +5,7 @@
 #include "nest_upload.h"
 #include "nest_ui.h"
 #include "nest_sd.h"
+#include "../common/wasp_mac.h"
 #include <Arduino.h>
 #include <SD.h>
 
@@ -27,6 +28,11 @@ static bool      fileListLoaded = false;
 // Modal state for file delete confirmation
 static bool fileModalShown = false;
 static int  fileModalIdx   = -1;
+
+// Worker detail — VIEW FILES button (draw + tap must match)
+static int detailViewFilesBtnY = 0;
+static const int DETAIL_BTN_W  = 220;
+static const int DETAIL_BTN_H  = 30;
 
 void uiInvalidateBrowser()  { browserLoaded  = false; }
 void uiInvalidateFileList() { fileListLoaded = false; }
@@ -106,8 +112,7 @@ static void drawWorkerRow(int row, const worker_entry_t& w) {
   tft.drawString(isDrone ? "D" : "W", 16, y + 10);
 
   char mac[18];
-  snprintf(mac, sizeof(mac), "%02X:%02X:%02X:%02X:%02X:%02X",
-           w.mac[0], w.mac[1], w.mac[2], w.mac[3], w.mac[4], w.mac[5]);
+  formatMacColon(w.mac, mac, sizeof(mac));
   tft.setTextFont(2);
   tft.setTextDatum(ML_DATUM);
   tft.setTextColor(nameC, CLR_BG);
@@ -224,9 +229,7 @@ void drawWorkerDetail() {
   const worker_entry_t* w = nullptr;
   for (int i = 0; i < MAX_WORKERS; i++) {
     char mac[18];
-    snprintf(mac, sizeof(mac), "%02X:%02X:%02X:%02X:%02X:%02X",
-             snap[i].mac[0], snap[i].mac[1], snap[i].mac[2],
-             snap[i].mac[3], snap[i].mac[4], snap[i].mac[5]);
+    formatMacColon(snap[i].mac, mac, sizeof(mac));
     if (strcmp(mac, uiDetailMac) == 0) { w = &snap[i]; break; }
   }
 
@@ -305,7 +308,8 @@ void drawWorkerDetail() {
   snprintf(buf, sizeof(buf), "Files on SD: %d  (%ld KB)", fCount, fBytes / 1024);
   tft.drawString(buf, 6, y); y += lh + 4;
 
-  drawBtn(10, y, 220, 30, "VIEW FILES");
+  detailViewFilesBtnY = y;
+  drawBtn(10, y, DETAIL_BTN_W, DETAIL_BTN_H, "VIEW FILES");
 }
 
 // ── FILE BROWSER ─────────────────────────────────────────────────────────────
@@ -586,12 +590,8 @@ void handleTapHome(int px, int py) {
     for (int i = 0; i < MAX_WORKERS; i++) {
       if (snap[i].lastSeenMs > 0 && (now - snap[i].lastSeenMs) < WORKER_TIMEOUT_MS) {
         if (visible == row) {
-          snprintf(uiDetailMac, sizeof(uiDetailMac), "%02X:%02X:%02X:%02X:%02X:%02X",
-                   snap[i].mac[0], snap[i].mac[1], snap[i].mac[2],
-                   snap[i].mac[3], snap[i].mac[4], snap[i].mac[5]);
-          snprintf(uiDetailMac12, sizeof(uiDetailMac12), "%02X%02X%02X%02X%02X%02X",
-                   snap[i].mac[0], snap[i].mac[1], snap[i].mac[2],
-                   snap[i].mac[3], snap[i].mac[4], snap[i].mac[5]);
+          formatMacColon(snap[i].mac, uiDetailMac, sizeof(uiDetailMac));
+          formatMac12(snap[i].mac, uiDetailMac12, sizeof(uiDetailMac12));
           uiInvalidateFileList();
           uiTransitionTo(SCR_WORKER_DETAIL);
           return;
@@ -604,8 +604,8 @@ void handleTapHome(int px, int py) {
 
 void handleTapWorkerDetail(int px, int py) {
   if (uiBackHit(px, py)) { uiBack(); return; }
-  // VIEW FILES button — drawn roughly 230px from top, tolerant range
-  if (px > 10 && px < 230 && py > 200 && py < 290) {
+  if (px > 10 && px < 10 + DETAIL_BTN_W &&
+      py >= detailViewFilesBtnY && py < detailViewFilesBtnY + DETAIL_BTN_H) {
     uiInvalidateFileList();
     uiTransitionTo(SCR_FILE_LIST);
   }
@@ -617,10 +617,7 @@ void handleTapFileBrowser(int px, int py) {
   int row = (py - HEADER_H) / rowH;
   if (row >= 0 && row < browserEntryCount) {
     strncpy(uiDetailMac12, browserEntries[row].mac12, sizeof(uiDetailMac12));
-    snprintf(uiDetailMac, sizeof(uiDetailMac), "%c%c:%c%c:%c%c:%c%c:%c%c:%c%c",
-             uiDetailMac12[0],uiDetailMac12[1],uiDetailMac12[2],uiDetailMac12[3],
-             uiDetailMac12[4],uiDetailMac12[5],uiDetailMac12[6],uiDetailMac12[7],
-             uiDetailMac12[8],uiDetailMac12[9],uiDetailMac12[10],uiDetailMac12[11]);
+    mac12ToColon(uiDetailMac12, uiDetailMac, sizeof(uiDetailMac));
     uiInvalidateFileList();
     uiTransitionTo(SCR_FILE_LIST);
   }
