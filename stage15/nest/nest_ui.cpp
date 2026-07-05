@@ -11,7 +11,12 @@ char     uiDetailMac12[13]  = {};
 ScreenId uiCurrent() { return uiStack[uiStackDepth - 1]; }
 
 void uiPush(ScreenId s) {
-  if (uiStackDepth < UI_STACK_MAX) uiStack[uiStackDepth++] = s;
+  if (uiStackDepth < UI_STACK_MAX) {
+    uiStack[uiStackDepth++] = s;
+  } else {
+    Serial.printf("[UI] WARNING: stack full (%d), dropped push screen=%d\n",
+                  UI_STACK_MAX, (int)s);
+  }
 }
 
 void uiPop() { if (uiStackDepth > 1) uiStackDepth--; }
