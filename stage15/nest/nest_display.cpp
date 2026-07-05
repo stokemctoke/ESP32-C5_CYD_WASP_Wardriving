@@ -35,8 +35,7 @@ void uiInvalidateFileList() { fileListLoaded = false; }
 static uint16_t rssiColor(int8_t r) {
   if (r > -50) return CLR_ACTIVE;
   if (r > -70) return CLR_STALE;
-  if (r > -85) return CLR_DRONE;
-  return CLR_ERROR;
+  return CLR_ERROR;   // weak signal — red warning
 }
 
 static void drawBrandMark() {
@@ -173,7 +172,7 @@ void drawHome() {
   tft.drawString(buf, 6, HEADER_H + STATUS_H / 2);
 
   if (cfg.homeSsid[0]) {
-    uint16_t hCol = (homeStatus == 1) ? CLR_GPS_OK : (homeStatus == 2) ? CLR_STALE : CLR_OFFLINE;
+    uint16_t hCol = (homeStatus == 1) ? CLR_GPS_OK : (homeStatus == 2) ? CLR_ERROR : CLR_OFFLINE;
     tft.setTextDatum(MR_DATUM);
     tft.setTextColor(hCol, CLR_BG);
     tft.drawString("H", 234, HEADER_H + STATUS_H / 2);
@@ -458,7 +457,7 @@ void drawFileList() {
     tft.drawString(szStr, 210, y + 10);
 
     // Delete 'x' target
-    tft.setTextColor(CLR_OFFLINE, CLR_BG);
+    tft.setTextColor(CLR_ERROR, CLR_BG);
     tft.drawString("x", 234, y + 18);
   }
 
@@ -488,7 +487,7 @@ void drawSettings() {
   tft.setTextColor(cfg.homeSsid[0] ? CLR_ACTIVE : CLR_OFFLINE, CLR_BG);
   tft.drawString(cfg.homeSsid[0] ? cfg.homeSsid : "not configured", 14, y); y += lh;
 
-  uint16_t hCol = (homeStatus == 1) ? CLR_GPS_OK : (homeStatus == 2) ? CLR_STALE : CLR_OFFLINE;
+  uint16_t hCol = (homeStatus == 1) ? CLR_GPS_OK : (homeStatus == 2) ? CLR_ERROR : CLR_OFFLINE;
   const char* hStr = (homeStatus == 1) ? "Connected" : (homeStatus == 2) ? "Failed" : "Offline";
   tft.setTextColor(hCol, CLR_BG);
   tft.drawString(hStr, 14, y); y += lh + 4;

@@ -50,7 +50,7 @@
 #define CLR_GPS_NO    0x9CB2   // #9E9890 — no fix
 #define CLR_DIVIDER   0x2125   // #26262F — row dividers
 #define CLR_FTR_BG    0x10A3   // #15151B — footer bar
-#define CLR_ERROR     0x89C1   // #8B3A0F — error / delete
+#define CLR_ERROR     0xF986   // #FF3333 — errors, weak RSSI, delete (not brand — kept red)
 
 // ── Packet types ─────────────────────────────────────────────────────────────
 #define WASP_PKT_SUMMARY   0x01
