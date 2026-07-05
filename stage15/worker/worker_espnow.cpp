@@ -7,6 +7,8 @@
 
 uint32_t lastHeartbeatMs = 0;
 bool     espNowOk        = false;
+static uint8_t hbSeq     = 0;
+static uint8_t sumSeq    = 0;
 
 static uint32_t effectiveHeartbeatMs() {
   static uint32_t interval = 0;
@@ -53,7 +55,9 @@ void sendHeartbeat() {
   pkt.type        = WASP_PKT_HEARTBEAT;
   pkt.nodeType    = droneMode ? 1 : 0;
   pkt.firmwareVer = WASP_FIRMWARE_VER;
+  pkt.seq         = ++hbSeq;
   WiFi.macAddress(pkt.workerMac);
+  waspSeal(&pkt, sizeof(pkt));
   esp_now_send(nestMac, (uint8_t*)&pkt, sizeof(pkt));
   lastHeartbeatMs = millis();
   ledHeartbeat();
@@ -84,6 +88,8 @@ void sendSummary(int wifiTotal, int wifi2g, int wifi5g,
   pkt.bleCount   = (uint16_t)bleCount;
   pkt.bestRssi   = bestRssi;
   pkt.cycleCount = cycleCount + 1;
+  pkt.seq        = ++sumSeq;
+  waspSeal(&pkt, sizeof(pkt));
   esp_err_t err = esp_now_send(nestMac, (uint8_t*)&pkt, sizeof(pkt));
   if (err != ESP_OK) {
     Serial.printf("[WARN] esp_now_send summary failed: %s\n", esp_err_to_name(err));
