@@ -25,6 +25,7 @@
 // ── Worker registry ───────────────────────────────────────────────────────────
 #define MAX_WORKERS        8
 #define WORKER_TIMEOUT_MS  30000   // active / in-range; hide from home list after this
+#define WORKER_STALE_MS     10000   // row accent turns stale-warning before timeout
 #define WORKER_REMOVE_MS  300000   // free registry slot after 5 min
 
 // ── Display layout (240 × 320 portrait) ──────────────────────────────────────
