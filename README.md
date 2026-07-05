@@ -1,5 +1,6 @@
-[![Ko-Fi](https://img.shields.io/badge/Ko--Fi-Support%20Me-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/stoke)
-[![My Website](https://img.shields.io/badge/Website-stokemctoke.com-FAA307)](https://stokemctoke.com)
+[![Shop: gallusgadgets.com](https://img.shields.io/badge/Shop-gallusgadgets.com-2E7D32)](https://gallusgadgets.com)
+[![Blog: stokemctoke.com](https://img.shields.io/badge/Blog-stokemctoke.com-FAA307)](https://stokemctoke.com)
+[![Ko-Fi: Support Me](https://img.shields.io/badge/Ko--Fi-Support%20Me-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/stoke)
 [![Platform: ESP32-C5](https://img.shields.io/badge/Platform-ESP32--C5-blue)](https://www.espressif.com/en/products/socs/esp32-c5)
 
 # W.A.S.P. - Wardriving Swarm Project
@@ -170,29 +171,6 @@ LED type, brightness, and all flash patterns are set per-worker in `/worker.cfg`
 | Home upload failed | Red `#FF0000` | 3× flash (200 ms) |
 
 > GPIO 4 (red channel) is shared with `TFT_RST` in `TFT_eSPI`'s `User_Setup.h`. It is reclaimed as a plain output immediately after `tft.init()` completes — the reset pulse only fires once at startup.
-
----
-
-## Build Stages
-
-| Stage | Description | Status |
-|---|---|---|
-| 1 | ESP-NOW ping-pong — prove cross-chip comms (Nest ↔ Worker) | ✅ Complete |
-| 2 | Worker standalone scan — 2.4 + 5 GHz WiFi + BLE to serial | ✅ Complete |
-| 3 | Worker with GPS — geo-tagged scans to serial | ✅ Complete |
-| 4 | Worker with SD — write WiGLE-format log locally | ✅ Complete |
-| 5 | Real-time streaming — worker streams scan data to nest via ESP-NOW | ✅ Complete |
-| 6 | File sync — worker connects to nest AP and transfers logs | ✅ Complete |
-| 7 | Nest display — worker list, scan counts, file browser on CYD touch | ✅ Complete |
-| 8 | Unified worker firmware — auto-detects Worker vs Drone mode at boot | ✅ Complete |
-| 9 | Hardened file sync — 8 KB log cap, RAM pre-buffer, path validation, TCP upload | ✅ Complete |
-| 10 | Chunked upload — split large files into 8 KB chunks for reliable transfer of any size | ✅ Complete |
-| 11 | RGB LED status — replace OLED with single addressable LED; brightness + on/off in worker.cfg | ✅ Complete |
-| 12 | Home upload — Nest connects to home WiFi and uploads CSVs to WiGLE + WDGWars; worker `ledType` config (ws2812 / rgb4pin) | ✅ Complete |
-| 13 | LED config via SD — all flash patterns (colour, count, timing) tuneable in wasp.cfg / worker.cfg without reflash | ✅ Complete |
-| 14 | Fast sync + upload fixes — single-connect chunked upload confirmed; WiGLE column order fix; ESP-NOW restore after failed nest connect | ✅ Complete |
-| 15 | Modular refactor — worker split into 9 modules; nest split into 8 modules. Future changes touch only the relevant file | ✅ Complete |
-| 16 | Nest touch UI (`stage15/nest/`) — capacitive CST820 (I²C) driver, stack-based menu, fade transitions, file browser, worker detail, settings. Invalidation-driven rendering eliminates flicker on detail screens. No separate `stage16/` folder | ✅ Complete |
 
 ---
 
