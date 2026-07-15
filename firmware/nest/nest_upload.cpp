@@ -3,6 +3,7 @@
 #include "nest_registry.h"
 #include "nest_led.h"
 #include "nest_sd.h"
+#include "nest_home.h"
 #include <SD.h>
 #include <WiFi.h>
 #include <Arduino.h>
@@ -20,6 +21,7 @@ static struct {
   size_t   written;
   int      contentLen;
   bool     ok;
+  bool     sdHeld;      // true while this handler owns sdMutex (RAW_START..RAW_END)
   int      httpCode;
   const char* errText;
   String   path;
@@ -84,6 +86,14 @@ bool isValidUploadToken(const String& token) {
 void handleRawUpload() {
   WiFiClient client = rawServer.accept();
   if (!client) return;
+
+  // A home upload takes the radio to STA and tears down the AP; refuse worker
+  // syncs during that window so we don't fight over WiFi state. Worker retries.
+  if (isHomeUploadRunning()) {
+    client.println("ERR busy");
+    client.stop();
+    return;
+  }
 
   client.setTimeout(15000);
   String hdr = client.readStringUntil('\n');
@@ -293,6 +303,10 @@ void handleUploadBody() {
       gHttpUp.ok = false; gHttpUp.httpCode = 503; gHttpUp.errText = "SD not ready";
       return;
     }
+    if (isHomeUploadRunning()) {
+      gHttpUp.ok = false; gHttpUp.httpCode = 503; gHttpUp.errText = "Nest busy (home upload)";
+      return;
+    }
     String workerMac, fileName;
     if (!resolveUploadMeta(workerMac, fileName)) {
       gHttpUp.ok = false; gHttpUp.httpCode = 400; gHttpUp.errText = "Bad params";
@@ -302,12 +316,14 @@ void handleUploadBody() {
     String dir = "/logs/" + workerMac;
     gHttpUp.path = dir + "/" + fileName;
     sdTake();
+    gHttpUp.sdHeld = true;
     if (!SD.exists("/logs")) SD.mkdir("/logs");
     if (!SD.exists(dir))     SD.mkdir(dir);
     if (SD.exists(gHttpUp.path.c_str())) SD.remove(gHttpUp.path.c_str());
     gHttpUp.sdFile = SD.open(gHttpUp.path.c_str(), FILE_WRITE);
     if (!gHttpUp.sdFile) {
       sdGive();
+      gHttpUp.sdHeld = false;
       gHttpUp.ok = false; gHttpUp.httpCode = 500; gHttpUp.errText = "SD open failed";
     }
     break;
@@ -334,14 +350,17 @@ void handleUploadBody() {
       taskEXIT_CRITICAL(&gLock);
       Serial.printf("[NEST] Saved %s (%d bytes)\n", gHttpUp.path.c_str(), gHttpUp.contentLen);
     }
-    sdGive();
+    if (gHttpUp.sdHeld) { sdGive(); gHttpUp.sdHeld = false; }
     break;
   }
   case RAW_ABORTED: {
     gHttpUp.ok = false; gHttpUp.httpCode = 500; gHttpUp.errText = "Upload aborted";
     if (gHttpUp.sdFile) gHttpUp.sdFile.close();
-    if (gHttpUp.path.length()) SD.remove(gHttpUp.path.c_str());
-    sdGive();
+    if (gHttpUp.sdHeld) {
+      if (gHttpUp.path.length()) SD.remove(gHttpUp.path.c_str());
+      sdGive();
+      gHttpUp.sdHeld = false;
+    }
     break;
   }
   default:

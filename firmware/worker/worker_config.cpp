@@ -123,8 +123,8 @@ void loadNvsConfig() {
   if (prefs.isKey("nestPsk"))  { prefs.getString("nestPsk",  nestPsk,  sizeof(nestPsk));  loaded++; }
   if (prefs.isKey("nestIp"))   { prefs.getString("nestIp",   nestIp,   sizeof(nestIp));   loaded++; }
   if (prefs.isKey("uploadToken")) { prefs.getString("uploadToken", uploadToken, sizeof(uploadToken)); loaded++; }
-  if (prefs.isKey("syncEvery"))           { syncEvery           = max(1, prefs.getInt("syncEvery", syncEvery)); loaded++; }
-  if (prefs.isKey("heartbeatIntervalMs")) { heartbeatIntervalMs = max(1000, prefs.getInt("heartbeatIntervalMs", heartbeatIntervalMs)); loaded++; }
+  if (prefs.isKey("syncEvery"))           { syncEvery           = max(1, (int)prefs.getInt("syncEvery", syncEvery)); loaded++; }
+  if (prefs.isKey("heartbeatIntervalMs")) { heartbeatIntervalMs = max(1000, (int)prefs.getInt("heartbeatIntervalMs", heartbeatIntervalMs)); loaded++; }
   if (prefs.isKey("verboseSerial"))       { verboseSerial = prefs.getBool("verboseSerial", verboseSerial); loaded++; }
 
   prefs.end();

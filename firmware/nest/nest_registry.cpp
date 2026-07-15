@@ -11,17 +11,19 @@ int findWorker(const uint8_t* mac) {
   return -1;
 }
 
-int findOrAddWorker(const uint8_t* mac) {
+int findOrAddWorker(const uint8_t* mac, registry_evt_t* evt) {
+  if (evt) evt->kind = REG_EVT_NONE;
   int idx = findWorker(mac);
   if (idx >= 0) return idx;
   for (int i = 0; i < MAX_WORKERS; i++)
     if (workers[i].lastSeenMs == 0) { memcpy(workers[i].mac, mac, 6); return i; }
 
   // All slots occupied — evict the oldest stale entry (timed out but not yet removed).
+  // Logging is deferred to the caller via *evt: this runs inside the gLock
+  // critical section, where Serial.printf is unsafe.
   uint32_t now = millis();
   int evictIdx = -1;
   uint32_t oldestSeen = UINT32_MAX;
-  char evicted[18], newcomer[18];
   for (int i = 0; i < MAX_WORKERS; i++) {
     if (workers[i].lastSeenMs == 0) continue;
     uint32_t age = now - workers[i].lastSeenMs;
@@ -31,21 +33,33 @@ int findOrAddWorker(const uint8_t* mac) {
     }
   }
   if (evictIdx < 0) {
-    formatMacColon(mac, newcomer, sizeof(newcomer));
-    Serial.printf("[NEST] WARNING: registry full — no stale slots, dropping worker %s\n",
-                  newcomer);
+    if (evt) { evt->kind = REG_EVT_DROPPED; memcpy(evt->newcomer, mac, 6); }
     return -1;
   }
 
-  const uint8_t* ev = workers[evictIdx].mac;
-  formatMacColon(ev, evicted, sizeof(evicted));
-  formatMacColon(mac, newcomer, sizeof(newcomer));
-  Serial.printf("[NEST] WARNING: registry full — evicted stale worker %s for %s\n",
-                evicted, newcomer);
-
+  if (evt) {
+    evt->kind = REG_EVT_EVICTED;
+    memcpy(evt->evicted, workers[evictIdx].mac, 6);
+    memcpy(evt->newcomer, mac, 6);
+  }
   memset(&workers[evictIdx], 0, sizeof(workers[evictIdx]));
   memcpy(workers[evictIdx].mac, mac, 6);
   return evictIdx;
+}
+
+void logRegistryEvt(const registry_evt_t& evt) {
+  if (evt.kind == REG_EVT_NONE) return;
+  char newcomer[18];
+  formatMacColon(evt.newcomer, newcomer, sizeof(newcomer));
+  if (evt.kind == REG_EVT_DROPPED) {
+    Serial.printf("[NEST] WARNING: registry full — no stale slots, dropping worker %s\n",
+                  newcomer);
+  } else {
+    char evicted[18];
+    formatMacColon(evt.evicted, evicted, sizeof(evicted));
+    Serial.printf("[NEST] WARNING: registry full — evicted stale worker %s for %s\n",
+                  evicted, newcomer);
+  }
 }
 
 int countActiveWorkers() {

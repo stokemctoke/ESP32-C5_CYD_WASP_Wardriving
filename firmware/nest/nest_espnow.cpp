@@ -46,8 +46,9 @@ void onDataRecv(const esp_now_recv_info_t* info, const uint8_t* data, int len) {
     ledHeartbeatFlag = true;
     uint32_t ago = 0;
 
+    registry_evt_t regEvt;
     taskENTER_CRITICAL(&gLock);
-    int idx = findOrAddWorker(pkt->workerMac);
+    int idx = findOrAddWorker(pkt->workerMac, &regEvt);
     if (idx >= 0) {
       ago = (workers[idx].lastSeenMs > 0) ? (millis() - workers[idx].lastSeenMs) / 1000 : 0;
       workers[idx].lastSeenMs = millis();
@@ -55,6 +56,7 @@ void onDataRecv(const esp_now_recv_info_t* info, const uint8_t* data, int len) {
       workers[idx].nodeType   = pkt->nodeType;
     }
     taskEXIT_CRITICAL(&gLock);
+    logRegistryEvt(regEvt);
 
     taskENTER_CRITICAL(&espnowLogLock);
     memcpy(hbLog.mac, pkt->workerMac, 6);
@@ -76,8 +78,9 @@ void onDataRecv(const esp_now_recv_info_t* info, const uint8_t* data, int len) {
   }
   maybeWarnFirmware(pkt->firmwareVer, pkt->workerMac);
 
+  registry_evt_t regEvt;
   taskENTER_CRITICAL(&gLock);
-  int idx = findOrAddWorker(pkt->workerMac);
+  int idx = findOrAddWorker(pkt->workerMac, &regEvt);
   if (idx >= 0) {
     workers[idx].lastSeenMs    = millis();
     workers[idx].lastSummaryMs = millis();
@@ -95,6 +98,7 @@ void onDataRecv(const esp_now_recv_info_t* info, const uint8_t* data, int len) {
     workers[idx].cycleCount    = pkt->cycleCount;
   }
   taskEXIT_CRITICAL(&gLock);
+  logRegistryEvt(regEvt);
 
   taskENTER_CRITICAL(&espnowLogLock);
   memcpy(&sumLog.pkt, pkt, sizeof(scan_summary_t));
