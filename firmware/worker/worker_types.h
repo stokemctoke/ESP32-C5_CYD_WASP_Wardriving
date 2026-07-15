@@ -77,4 +77,4 @@ struct cycle_slot_t {
   ble_entry_t  ble[MAX_BLE_PER_SLOT];
 };
 
-// ESP-NOW packet layouts: stage15/common/wasp_packets.h
+// ESP-NOW packet layouts: firmware/common/wasp_packets.h

@@ -182,7 +182,7 @@
 - **ILI9341 Datasheet:** Ilitek ILI9341 TFT driver (standard; widely documented)
 - **ESP32 Datasheet:** Espressif ESP32-WROOM (dual-core, 240 MHz, 320 KB SRAM)
 - **TFT_eSPI Library:** https://github.com/Bodmer/TFT_eSPI (Arduino Library Manager)
-- **W.A.S.P. Codebase:** `/stage15/nest/` (latest known good configuration)
+- **W.A.S.P. Codebase:** `/firmware/nest/` (latest known good configuration)
 
 ---
 

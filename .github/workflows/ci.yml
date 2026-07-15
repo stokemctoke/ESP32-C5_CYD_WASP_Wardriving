@@ -31,10 +31,10 @@ jobs:
         run: cp ci/tft_eSPI_User_Setup.h ~/Arduino/libraries/TFT_eSPI/User_Setup.h
 
       - name: Compile Nest (ESP32 Dev Module)
-        run: arduino-cli compile --fqbn esp32:esp32:esp32 stage15/nest/nest.ino
+        run: arduino-cli compile --fqbn esp32:esp32:esp32 firmware/nest/nest.ino
 
       - name: Compile Worker (ESP32-C5, Huge APP)
         run: >-
           arduino-cli compile
           --fqbn esp32:esp32:esp32c5:PartitionScheme=huge_app,CDCOnBoot=cdc,PSRAM=disabled
-          stage15/worker/worker.ino
+          firmware/worker/worker.ino

@@ -119,4 +119,4 @@ struct wasp_config_t {
   char wdgwarsApiKey[72];
 };
 
-// ESP-NOW packet layouts: stage15/common/wasp_packets.h
+// ESP-NOW packet layouts: firmware/common/wasp_packets.h

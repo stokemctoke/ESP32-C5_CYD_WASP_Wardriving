@@ -218,7 +218,7 @@ Install via `Tools > Board > Board Manager`.
 
 ### Flashing
 
-Flash `stage15/nest/nest.ino` to the CYD and `stage15/worker/worker.ino` to the C5.
+Flash `firmware/nest/nest.ino` to the CYD and `firmware/worker/worker.ino` to the C5.
 
 ### Config Files
 
@@ -347,7 +347,7 @@ To change home WiFi credentials, API keys, or LED patterns, edit `/wasp.cfg` on 
 ├── worker.cfg.example             ← Worker SD config template
 ├── ci/                            ← TFT_eSPI pin setup for CI builds
 ├── .github/workflows/ci.yml       ← compile verification (Nest + Worker)
-└── stage15/                       ← active firmware (flash this)
+└── firmware/                      ← active firmware (flash this)
     ├── common/
     │   └── wasp_packets.h         ← shared ESP-NOW packet layouts (Nest + Worker)
     ├── nest/
@@ -377,7 +377,7 @@ To change home WiFi credentials, API keys, or LED patterns, edit `/wasp.cfg` on 
         └── worker_sync.h/cpp      ← connectToNest, syncFiles, uploadChunked
 ```
 
-Active development happens on **`master`**. Flash from `stage15/` only.
+Active development happens on **`master`**. Flash from `firmware/` only.
 
 ---
 
